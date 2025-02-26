@@ -32,7 +32,10 @@ def load_songs():
     """Load songs from JSON file"""
     if os.path.exists(SONGS_FILE):
         with open(SONGS_FILE, 'r') as f:
-            return json.load(f)
+            try:
+                return json.load(f)
+            except json.JSONDecodeError:
+                return []
     return []
 
 def save_songs(songs):
@@ -81,7 +84,6 @@ if not os.path.exists(SONGS_FILE):
             "youtube_id": "Mz031oU0Xfw",
             "cover_url": "https://img.youtube.com/vi/Mz031oU0Xfw/hqdefault.jpg"
         }
- 
     ]
     save_songs(default_songs)
 
@@ -89,6 +91,21 @@ if not os.path.exists(SONGS_FILE):
 def index():
     """Render the main music player page"""
     songs = load_songs()
+    
+    # Check for newly added song from session
+    new_song_id = request.args.get('new_song_id')
+    if new_song_id:
+        try:
+            new_song_id = int(new_song_id)
+            # Mark the new song
+            for song in songs:
+                if song.get('id') == new_song_id:
+                    song['is_new_added'] = True
+                else:
+                    song['is_new_added'] = False
+        except ValueError:
+            pass
+    
     return render_template('index.html', songs=songs)
 
 @app.route('/add_song', methods=['POST'])
@@ -98,31 +115,31 @@ def add_song():
     artist = request.form.get('artist')
     youtube_url = request.form.get('youtube_url')
     
-    if not (title and artist and youtube_url):
-        return jsonify({"error": "Missing required fields"}), 400
-    
     youtube_id = get_youtube_id(youtube_url)
+    
     if not youtube_id:
-        return jsonify({"error": "Invalid YouTube URL"}), 400
+        # Redirect back with error
+        return redirect(url_for('index'))
     
+    # Load current songs
     songs = load_songs()
-    new_id = max([song.get('id', 0) for song in songs], default=0) + 1
     
-    # Get thumbnail from YouTube
-    cover_url = f"https://img.youtube.com/vi/{youtube_id}/0.jpg"
+    # Generate a new ID
+    new_id = 1
+    if songs:
+        new_id = max(song.get('id', 0) for song in songs) + 1
     
+    # Create new song
     new_song = {
         "id": new_id,
         "title": title,
         "artist": artist,
         "youtube_id": youtube_id,
-        "cover_url": cover_url
+        "cover_url": get_youtube_thumbnail(youtube_id)
     }
     
-    songs.insert(0, new_song)  # Insert new song at the beginning
-    save_songs(songs)
-    
-    return redirect(url_for('index'))
+    # Add to list
+    songs.append(new_song)
 
 @app.route('/remove_song/<int:song_id>', methods=['POST'])
 def remove_song(song_id):

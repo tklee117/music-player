@@ -15,19 +15,19 @@
         }
         
         body {
-        background: url('static/cup_of_coffee_love.gif') no-repeat center center fixed;
-        background-size: cover;
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 2rem 1rem;
-    }
+            background: url('static/cup_of_coffee_love.gif') no-repeat center center fixed;
+            background-size: cover;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 1rem;
+        }
         
         .container {
             max-width: 400px;
             width: 100%;
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.5); /* Changed from 0.7 to 0.5 for more transparency */
             border-radius: 20px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             overflow: hidden;
@@ -44,14 +44,14 @@
         }
         
         .song-cover {
-            width: 200px; /* Reduced from 250px */
-            height: 200px; /* Reduced from 250px */
+            width: 200px;
+            height: 200px;
             border-radius: 15px;
             overflow: hidden;
             position: relative;
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
             margin-bottom: 1.5rem;
-            background-color: rgba(238, 238, 238, 0.7); /* Added transparency */
+            background-color: rgba(238, 238, 238, 0.7);
         }
         
         .song-cover img {
@@ -70,9 +70,9 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 60px; /* Reduced from 70px */
-            height: 60px; /* Reduced from 70px */
-            background: rgba(255, 255, 255, 0.7); /* Added transparency */
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.7);
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -121,8 +121,8 @@
             background: none;
             border: none;
             cursor: pointer;
-            width: 35px; /* Reduced from 40px */
-            height: 35px; /* Reduced from 40px */
+            width: 35px;
+            height: 35px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -139,9 +139,9 @@
         }
         
         .play-control {
-            width: 50px; /* Reduced from 55px */
-            height: 50px; /* Reduced from 55px */
-            background: rgba(232, 62, 140, 0.8); /* Added transparency */
+            width: 50px;
+            height: 50px;
+            background: rgba(232, 62, 140, 0.8);
             border-radius: 50%;
         }
         
@@ -174,15 +174,24 @@
             font-weight: 600;
         }
         
-        .add-song-btn {
+        .playlist-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .add-song-btn, .shuffle-btn {
             font-size: 0.9rem;
             color: #e83e8c;
             background: none;
             border: none;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
         }
         
-        .add-song-btn:hover {
+        .add-song-btn:hover, .shuffle-btn:hover {
             text-decoration: underline;
         }
         
@@ -200,6 +209,7 @@
             border-bottom: 1px solid #eee;
             cursor: pointer;
             transition: background 0.2s ease;
+            position: relative;
         }
         
         .playlist-item:hover {
@@ -208,6 +218,16 @@
         
         .playlist-item.active {
             background: #f8e1eb;
+        }
+        
+        .playlist-item.new-added {
+            animation: highlight-pulse 2s infinite;
+        }
+        
+        @keyframes highlight-pulse {
+            0% { box-shadow: inset 0 0 0 2px rgba(232, 62, 140, 0.4); }
+            50% { box-shadow: inset 0 0 0 2px rgba(232, 62, 140, 0.8); }
+            100% { box-shadow: inset 0 0 0 2px rgba(232, 62, 140, 0.4); }
         }
         
         .playlist-item-img {
@@ -238,6 +258,21 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+        }
+        
+        .delete-song-btn {
+            opacity: 0;
+            background: none;
+            border: none;
+            color: #e83e8c;
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 0.2rem;
+            transition: opacity 0.2s ease;
+        }
+        
+        .playlist-item:hover .delete-song-btn {
+            opacity: 1;
         }
         
         .playing-indicator {
@@ -387,7 +422,14 @@
         <div class="playlist">
             <div class="playlist-header">
                 <div class="playlist-title">Playlist</div>
-                <button class="add-song-btn" id="show-add-form-btn">Add Song</button>
+                <div class="playlist-controls">
+                    <button class="shuffle-btn" id="shuffle-btn">
+                        <i class="fas fa-random"></i> Shuffle
+                    </button>
+                    <button class="add-song-btn" id="show-add-form-btn">
+                        <i class="fas fa-plus"></i> Add Song
+                    </button>
+                </div>
             </div>
             
             <!-- Add song form (initially hidden) -->
@@ -416,12 +458,15 @@
             <!-- Playlist items -->
             <div class="playlist-items" id="playlist-container">
                 {% for song in songs %}
-                <div class="playlist-item" data-id="{{ song.id }}" data-youtube-id="{{ song.youtube_id }}">
+                <div class="playlist-item{% if song.is_new_added %} new-added{% endif %}" data-id="{{ song.id }}" data-youtube-id="{{ song.youtube_id }}">
                     <img class="playlist-item-img" src="{{ song.cover_url }}" alt="{{ song.title }}">
                     <div class="playlist-item-info">
                         <div class="playlist-item-title">{{ song.title }}</div>
                         <div class="playlist-item-artist">{{ song.artist }}</div>
                     </div>
+                    <button class="delete-song-btn" onclick="deleteSong({{ song.id }}, event)">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </div>
                 {% endfor %}
             </div>
@@ -447,6 +492,7 @@
         const playBtn = document.getElementById('play-btn');
         const nextBtn = document.getElementById('next-btn');
         const replayBtn = document.getElementById('replay-btn');
+        const shuffleBtn = document.getElementById('shuffle-btn');
         const songTitle = document.getElementById('song-title');
         const songArtist = document.getElementById('song-artist');
         const coverImage = document.getElementById('cover-image');
@@ -600,6 +646,72 @@
             }
         }
         
+        // Shuffle the playlist
+        function shufflePlaylist() {
+            const playlistItems = Array.from(document.querySelectorAll('.playlist-item'));
+            if (playlistItems.length <= 1) return;
+            
+            // Get currently playing song element
+            const currentSong = playlistItems[currentSongIndex];
+            
+            // Remove the current song from the array to shuffle
+            playlistItems.splice(currentSongIndex, 1);
+            
+            // Shuffle the remaining songs
+            for (let i = playlistItems.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [playlistItems[i], playlistItems[j]] = [playlistItems[j], playlistItems[i]];
+            }
+            
+            // Put the current song back at index 0
+            playlistItems.unshift(currentSong);
+            
+            // Update the DOM
+            const playlistContainer = document.getElementById('playlist-container');
+            playlistContainer.innerHTML = '';
+            
+            playlistItems.forEach(item => {
+                playlistContainer.appendChild(item);
+            });
+            
+            // Reset current index
+            currentSongIndex = 0;
+        }
+        
+        // Delete a song
+        function deleteSong(songId, event) {
+            // Prevent the click from propagating to the playlist item
+            event.stopPropagation();
+            
+            // Send delete request
+            fetch(`/remove_song/${songId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Remove from DOM
+                    const songElement = document.querySelector(`.playlist-item[data-id="${songId}"]`);
+                    const isCurrentlyPlaying = songElement.classList.contains('active');
+                    
+                    // If the deleted song is currently playing, play the next song
+                    if (isCurrentlyPlaying) {
+                        const nextSibling = songElement.nextElementSibling || document.querySelector('.playlist-item');
+                        if (nextSibling) {
+                            loadSong(nextSibling);
+                            if (isPlaying) {
+                                player.playVideo();
+                            }
+                        }
+                    }
+                    
+                    songElement.remove();
+                }
+            });
+        }
+        
         // Event listeners
         document.addEventListener('DOMContentLoaded', function() {
             // Play/pause buttons
@@ -611,6 +723,9 @@
             
             // Replay button
             replayBtn.addEventListener('click', replaySong);
+            
+            // Shuffle button
+            shuffleBtn.addEventListener('click', shufflePlaylist);
             
             // Playlist item click
             document.querySelectorAll('.playlist-item').forEach(item => {
@@ -632,6 +747,13 @@
             cancelAddFormBtn.addEventListener('click', function() {
                 addSongForm.classList.add('hidden');
             });
+
+            // Remove new-added class after some time
+            setTimeout(() => {
+                document.querySelectorAll('.new-added').forEach(item => {
+                    item.classList.remove('new-added');
+                });
+            }, 10000);  // Remove after 10 seconds
         });
     </script>
 </body>
