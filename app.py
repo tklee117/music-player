@@ -47,26 +47,40 @@ def get_youtube_thumbnail(youtube_id):
 if not os.path.exists(SONGS_FILE):
     default_songs = [
         {
-            "id": 1,
-            "title": "별 보러 가자",
-            "artist": "적재",
-            "youtube_id": "Mz031oU0Xfw",
-            "cover_url": get_youtube_thumbnail("Mz031oU0Xfw")
-        },
-        {
-            "id": 2,
-            "title": "As It Was",
-            "artist": "Harry Styles",
-            "youtube_id": "H5v3kku4y6Q",
-            "cover_url": get_youtube_thumbnail("H5v3kku4y6Q")
-        },
-        {
-            "id": 3,
-            "title": "Cruel Summer",
-            "artist": "Taylor Swift",
-            "youtube_id": "ic8j13piAhQ",
-            "cover_url": "https://i.imgur.com/placeholder3.jpg"
-        }
+    "id": 1,
+    "title": "Let's go watch the stars",
+    "artist": "Jeok-Jae",
+    "youtube_id": "Mz031oU0Xfw",
+    "cover_url": "https://img.youtube.com/vi/Mz031oU0Xfw/hqdefault.jpg"
+  },
+  {
+    "id": 2,
+    "title": "Thinkin Bout You",
+    "artist": "Frank Ocean",
+    "youtube_id": "6JHu3b-pbh8",
+    "cover_url": "https://img.youtube.com/vi/6JHu3b-pbh8/hqdefault.jpg"
+  },
+  {
+    "id": 3,
+    "title": "New Year",
+    "artist": "Mk.gee",
+    "youtube_id": "iGQjD4gOzNM",
+    "cover_url": "https://img.youtube.com/vi/iGQjD4gOzNM/hqdefault.jpg"
+  },
+  {
+    "id": 4,
+    "title": "Give Me Mercy",
+    "artist": "The Weeknd",
+    "youtube_id": "cVoO8ZYXkrQ",
+    "cover_url": "https://img.youtube.com/vi/cVoO8ZYXkrQ/hqdefault.jpg"
+  },
+  {
+    "id": 5,
+    "title": "Get You",
+    "artist": "Daniel Caesar (feat. Kali Uchis)",
+    "youtube_id": "WFLGrpGemLg",
+    "cover_url": "https://img.youtube.com/vi/WFLGrpGemLg/0.jpg"
+  }
     ]
     save_songs(default_songs)
 
