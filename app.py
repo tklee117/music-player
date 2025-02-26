@@ -118,10 +118,11 @@ def add_song():
         "cover_url": cover_url
     }
     
-    songs.append(new_song)
+    songs.insert(0, new_song)  # Insert new song at the beginning
     save_songs(songs)
     
     return redirect(url_for('index'))
+
 
 @app.route('/remove_song/<int:song_id>', methods=['POST'])
 def remove_song(song_id):
