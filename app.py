@@ -6,8 +6,11 @@ from urllib.parse import urlparse, parse_qs
 
 app = Flask(__name__)
 
-# Data storage
-SONGS_FILE = 'songs.json'
+# Define an absolute path to store songs.json
+# This ensures it's saved in a known, persistent location
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+SONGS_FILE = os.path.join(BASE_DIR, 'songs.json')
+
 
 def get_youtube_id(url):
     """Extract YouTube ID from URL"""
@@ -30,18 +33,23 @@ def get_youtube_id(url):
 
 def load_songs():
     """Load songs from JSON file"""
-    if os.path.exists(SONGS_FILE):
-        with open(SONGS_FILE, 'r') as f:
-            try:
+    try:
+        if os.path.exists(SONGS_FILE):
+            with open(SONGS_FILE, 'r') as f:
                 return json.load(f)
-            except json.JSONDecodeError:
-                return []
+    except (json.JSONDecodeError, IOError) as e:
+        print(f"Error loading songs: {e}")
     return []
 
 def save_songs(songs):
     """Save songs to JSON file"""
-    with open(SONGS_FILE, 'w') as f:
-        json.dump(songs, f, indent=2)
+    try:
+        # Make sure directory exists
+        os.makedirs(os.path.dirname(SONGS_FILE), exist_ok=True)
+        with open(SONGS_FILE, 'w') as f:
+            json.dump(songs, f, indent=2)
+    except IOError as e:
+        print(f"Error saving songs: {e}")
 
 def get_youtube_thumbnail(youtube_id):
     return f"https://img.youtube.com/vi/{youtube_id}/hqdefault.jpg"
