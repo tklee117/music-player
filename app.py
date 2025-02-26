@@ -140,6 +140,12 @@ def add_song():
     
     # Add to list
     songs.append(new_song)
+    
+    # Save the updated songs list
+    save_songs(songs)
+    
+    # Redirect back with the new song ID
+    return redirect(url_for('index', new_song_id=new_id))
 
 @app.route('/remove_song/<int:song_id>', methods=['POST'])
 def remove_song(song_id):
@@ -147,7 +153,7 @@ def remove_song(song_id):
     songs = load_songs()
     songs = [song for song in songs if song.get('id') != song_id]
     save_songs(songs)
-    return redirect(url_for('index'))
+    return jsonify({"status": "success"})
 
 if __name__ == '__main__':
     app.run(debug=True)
