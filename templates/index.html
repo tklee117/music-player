@@ -1,352 +1,15 @@
-<!-- templates/index.html -->
+<!-- Add Korean language support -->
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cute Music Player</title>
+    <title>귀여운 음악 플레이어</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        /* Base styling */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
+        /* Ensure the font supports Korean characters */
         body {
-        background: url('static/cup_of_coffee_love.gif') no-repeat center center fixed;
-        background-size: cover;
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 2rem 1rem;
-    }
-        
-        .container {
-            max-width: 400px;
-            width: 100%;
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-            padding-bottom: 1rem;
-        }
-        
-        /* Music player styling */
-        .player-container {
-            position: relative;
-            padding: 1.5rem;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        
-        .song-cover {
-            width: 250px;
-            height: 250px;
-            border-radius: 15px;
-            overflow: hidden;
-            position: relative;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-            margin-bottom: 1.5rem;
-            background-color: #eee;
-        }
-        
-        .song-cover img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.3s ease;
-        }
-        
-        .song-cover:hover img {
-            transform: scale(1.05);
-        }
-        
-        .play-btn {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 70px;
-            height: 70px;
-            background: rgba(255, 255, 255, 0.7);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .play-btn:hover {
-            background: rgba(255, 255, 255, 0.9);
-            transform: translate(-50%, -50%) scale(1.1);
-        }
-        
-        .play-btn i {
-            color: #e83e8c;
-            font-size: 2rem;
-            padding-left: 5px;
-        }
-        
-        .song-info {
-            text-align: center;
-            margin-bottom: 1.5rem;
-        }
-        
-        .song-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 0.5rem;
-        }
-        
-        .song-artist {
-            font-size: 1rem;
-            color: #666;
-        }
-        
-        .controls {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-        
-        .control-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-        }
-        
-        .control-btn i {
-            color: #666;
-            font-size: 1.2rem;
-        }
-        
-        .control-btn:hover i {
-            color: #e83e8c;
-        }
-        
-        .play-control {
-            width: 55px;
-            height: 55px;
-            background: #e83e8c;
-            border-radius: 50%;
-        }
-        
-        .play-control i {
-            color: white;
-            font-size: 1.5rem;
-            padding-left: 3px;
-        }
-        
-        .play-control.pause i {
-            padding-left: 0;
-        }
-        
-        /* Playlist styling */
-        .playlist {
-            margin-top: 1rem;
-            padding: 0 1.5rem;
-        }
-        
-        .playlist-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.5rem;
-        }
-        
-        .playlist-title {
-            font-size: 1rem;
-            color: #555;
-            font-weight: 600;
-        }
-        
-        .add-song-btn {
-            font-size: 0.9rem;
-            color: #e83e8c;
-            background: none;
-            border: none;
-            cursor: pointer;
-        }
-        
-        .add-song-btn:hover {
-            text-decoration: underline;
-        }
-        
-        .playlist-items {
-            max-height: 200px;
-            overflow-y: auto;
-            background: #f8f9fa;
-            border-radius: 10px;
-        }
-        
-        .playlist-item {
-            display: flex;
-            align-items: center;
-            padding: 0.7rem 1rem;
-            border-bottom: 1px solid #eee;
-            cursor: pointer;
-            transition: background 0.2s ease;
-        }
-        
-        .playlist-item:hover {
-            background: #f0f1f3;
-        }
-        
-        .playlist-item.active {
-            background: #f8e1eb;
-        }
-        
-        .playlist-item-img {
-            width: 40px;
-            height: 40px;
-            border-radius: 5px;
-            margin-right: 0.8rem;
-            object-fit: cover;
-        }
-        
-        .playlist-item-info {
-            flex: 1;
-        }
-        
-        .playlist-item-title {
-            font-size: 0.9rem;
-            font-weight: 500;
-            color: #333;
-            margin-bottom: 0.2rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        
-        .playlist-item-artist {
-            font-size: 0.8rem;
-            color: #777;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        
-        .playing-indicator {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #e83e8c;
-            margin-left: 0.5rem;
-            animation: pulse 1.5s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { transform: scale(0.8); opacity: 0.5; }
-            50% { transform: scale(1.2); opacity: 1; }
-            100% { transform: scale(0.8); opacity: 0.5; }
-        }
-        
-        /* Add song form */
-        .add-song-form {
-            background: white;
-            padding: 1rem;
-            border-radius: 10px;
-            margin-bottom: 1rem;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
-        }
-        
-        .form-group {
-            margin-bottom: 0.8rem;
-        }
-        
-        .form-label {
-            display: block;
-            font-size: 0.9rem;
-            margin-bottom: 0.3rem;
-            color: #555;
-        }
-        
-        .form-input {
-            width: 100%;
-            padding: 0.6rem;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 0.9rem;
-        }
-        
-        .form-input:focus {
-            outline: none;
-            border-color: #e83e8c;
-        }
-        
-        .form-submit {
-            width: 100%;
-            padding: 0.7rem;
-            background: #e83e8c;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s ease;
-        }
-        
-        .form-submit:hover {
-            background: #d3277a;
-        }
-        
-        .cancel-btn {
-            text-align: center;
-            margin-top: 0.5rem;
-        }
-        
-        .cancel-btn button {
-            background: none;
-            border: none;
-            font-size: 0.8rem;
-            color: #777;
-            cursor: pointer;
-        }
-        
-        .cancel-btn button:hover {
-            color: #333;
-            text-decoration: underline;
-        }
-        
-        /* Hidden elements */
-        .hidden {
-            display: none;
-        }
-
-        /* Footer */
-        .footer {
-            margin-top: 2rem;
-            text-align: center;
-            font-size: 0.8rem;
-            color: #777;
-        }
-        
-        /* Responsive design */
-        @media (max-width: 480px) {
-            .song-cover {
-                width: 200px;
-                height: 200px;
-            }
-            
-            .song-title {
-                font-size: 1.3rem;
-            }
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif, 'Malgun Gothic', '맑은 고딕', sans-serif;
         }
     </style>
 </head>
@@ -387,30 +50,30 @@
         <!-- Playlist section -->
         <div class="playlist">
             <div class="playlist-header">
-                <div class="playlist-title">Playlist</div>
-                <button class="add-song-btn" id="show-add-form-btn">Add Song</button>
+                <div class="playlist-title">플레이리스트</div>
+                <button class="add-song-btn" id="show-add-form-btn">노래 추가</button>
             </div>
             
             <!-- Add song form (initially hidden) -->
             <div class="add-song-form hidden" id="add-song-form">
                 <form action="/add_song" method="post">
                     <div class="form-group">
-                        <label class="form-label" for="title">Song Title</label>
+                        <label class="form-label" for="title">노래 제목</label>
                         <input class="form-input" type="text" id="title" name="title" required>
                     </div>
                     <div class="form-group">
-                        <label class="form-label" for="artist">Artist</label>
+                        <label class="form-label" for="artist">아티스트</label>
                         <input class="form-input" type="text" id="artist" name="artist" required>
                     </div>
                     <div class="form-group">
-                        <label class="form-label" for="youtube_url">YouTube URL or Video ID</label>
+                        <label class="form-label" for="youtube_url">YouTube URL 또는 비디오 ID</label>
                         <input class="form-input" type="text" id="youtube_url" name="youtube_url" required
                                placeholder="https://www.youtube.com/watch?v=...">
                     </div>
-                    <button class="form-submit" type="submit">Add to Playlist</button>
+                    <button class="form-submit" type="submit">플레이리스트에 추가</button>
                 </form>
                 <div class="cancel-btn">
-                    <button id="cancel-add-form-btn">Cancel</button>
+                    <button id="cancel-add-form-btn">취소</button>
                 </div>
             </div>
             

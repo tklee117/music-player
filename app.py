@@ -123,7 +123,6 @@ def add_song():
     
     return redirect(url_for('index'))
 
-
 @app.route('/remove_song/<int:song_id>', methods=['POST'])
 def remove_song(song_id):
     """Remove a song from the playlist"""
