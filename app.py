@@ -91,6 +91,13 @@ if not os.path.exists(SONGS_FILE):
             "artist": "Jeok-Jae",
             "youtube_id": "Mz031oU0Xfw",
             "cover_url": "https://img.youtube.com/vi/Mz031oU0Xfw/hqdefault.jpg"
+        },
+        {
+            "id": 6,
+            "title": "Luther",
+            "artist": "Kendrick Lamar (feat. SZA)",
+            "youtube_id": "HfWLgELllZs",
+            "cover_url": "https://img.youtube.com/vi/HfWLgELllZs/hqdefault.jpg"
         }
     ]
     save_songs(default_songs)
