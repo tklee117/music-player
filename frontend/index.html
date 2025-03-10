@@ -115,6 +115,30 @@
         .render-notice a:hover {
             text-decoration: underline;
         }
+        
+        /* 추가 버튼 스타일 */
+        .reset-btn {
+            color: #5a6268;
+            margin-left: 0.5rem;
+            font-size: 0.9rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        
+        .reset-btn:hover {
+            color: #007bff;
+            text-decoration: underline;
+        }
+        
+        .action-group {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
     </style>
 </head>
 <body>
@@ -194,6 +218,14 @@
                 </div>
             </div>
             
+            <!-- 새로운 액션 그룹 -->
+            <div class="action-group">
+                <button class="reset-btn" id="reset-to-json-btn">
+                    <i class="fas fa-sync-alt"></i> songs.json으로 재설정
+                </button>
+                <span style="font-size: 0.8rem; color: #777;">songs.json에 있는 곡만 표시합니다</span>
+            </div>
+            
             <!-- Add song form (initially hidden) -->
             <div class="add-song-form hidden" id="add-song-form">
                 <form id="add-song-form-element">
@@ -268,6 +300,32 @@
                     }, 500);
                 }, 300);
             }, 1000);
+        });
+        
+        // songs.json 파일로 초기화하는 버튼 이벤트 설정
+        document.getElementById('reset-to-json-btn').addEventListener('click', async function() {
+            if (confirm('데이터베이스를 songs.json 파일의 내용으로 초기화하시겠습니까? 추가한 노래들이 삭제될 수 있습니다.')) {
+                try {
+                    const response = await fetch('/api/reset', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('초기화에 실패했습니다.');
+                    }
+                    
+                    alert('songs.json 파일의 노래 목록으로 초기화되었습니다.');
+                    
+                    // 페이지 새로고침
+                    window.location.reload();
+                } catch (error) {
+                    console.error('초기화 오류:', error);
+                    alert('초기화에 실패했습니다. 다시 시도해주세요.');
+                }
+            }
         });
     </script>
 </body>

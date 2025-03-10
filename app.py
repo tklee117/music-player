@@ -1,6 +1,7 @@
 # app.py
 from flask import Flask, jsonify, request, send_from_directory
 import os
+import json
 import sqlite3
 from urllib.parse import urlparse, parse_qs
 from flask_caching import Cache
@@ -22,6 +23,7 @@ cache = Cache(app, config={
 # Define an absolute path for database
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_FILE = os.path.join(BASE_DIR, 'songs.db')
+SONGS_JSON_FILE = os.path.join(BASE_DIR, 'songs.json')
 
 def get_youtube_id(url):
     """Extract YouTube ID from URL"""
@@ -71,86 +73,33 @@ def init_db():
     # Check if table is empty
     result = conn.execute('SELECT COUNT(*) FROM songs').fetchone()
     
-    # If empty, add default songs
-    if result[0] == 0:
-        default_songs = [
-            # songs.json에 있던 노래들 추가
-            {
-                "title": "Star",
-                "artist": "Mingginyu",
-                "youtube_id": "0t_ORa7dmO4",
-                "cover_url": "https://img.youtube.com/vi/0t_ORa7dmO4/hqdefault.jpg"
-            },
-            {
-                "title": "My shadow",
-                "artist": "The Black Skirts",
-                "youtube_id": "T15zuMtqBoE",
-                "cover_url": "https://img.youtube.com/vi/T15zuMtqBoE/hqdefault.jpg"
-            },
-            {
-                "title": "Luther",
-                "artist": "Kendrick Lamar (feat. SZA)",
-                "youtube_id": "HfWLgELllZs",
-                "cover_url": "https://img.youtube.com/vi/HfWLgELllZs/hqdefault.jpg"
-            },
-            {
-                "title": "Get You",
-                "artist": "Daniel Caesar (feat. Kali Uchis)",
-                "youtube_id": "WFLGrpGemLg",
-                "cover_url": "https://img.youtube.com/vi/WFLGrpGemLg/0.jpg"
-            },
-            {
-                "title": "Give Me Mercy",
-                "artist": "The Weeknd",
-                "youtube_id": "cVoO8ZYXkrQ",
-                "cover_url": "https://img.youtube.com/vi/cVoO8ZYXkrQ/hqdefault.jpg"
-            },
-            {
-                "title": "New Year",
-                "artist": "Mk.gee",
-                "youtube_id": "iGQjD4gOzNM",
-                "cover_url": "https://img.youtube.com/vi/iGQjD4gOzNM/hqdefault.jpg"
-            },
-            {
-                "title": "Thinkin Bout You",
-                "artist": "Frank Ocean",
-                "youtube_id": "6JHu3b-pbh8",
-                "cover_url": "https://img.youtube.com/vi/6JHu3b-pbh8/hqdefault.jpg"
-            },
-            {
-                "title": "Let's go watch the stars",
-                "artist": "Jeok-Jae",
-                "youtube_id": "Mz031oU0Xfw",
-                "cover_url": "https://img.youtube.com/vi/Mz031oU0Xfw/hqdefault.jpg"
-            },
-            # 한국어 노래 샘플 추가
-            {
-                "title": "사랑은 늘 도망가",
-                "artist": "임영웅",
-                "youtube_id": "z_8tUyl1eMo",
-                "cover_url": "https://img.youtube.com/vi/z_8tUyl1eMo/hqdefault.jpg"
-            },
-            {
-                "title": "봄여름가을겨울",
-                "artist": "BIGBANG (빅뱅)",
-                "youtube_id": "zZLz_u0trPI",
-                "cover_url": "https://img.youtube.com/vi/zZLz_u0trPI/hqdefault.jpg"
-            },
-            {
-                "title": "밤편지",
-                "artist": "아이유 (IU)",
-                "youtube_id": "BzYnNdJhZQw",
-                "cover_url": "https://img.youtube.com/vi/BzYnNdJhZQw/hqdefault.jpg"
-            }
-        ]
-        
-        for song in default_songs:
-            conn.execute('''
-                INSERT INTO songs (title, artist, youtube_id, cover_url)
-                VALUES (?, ?, ?, ?)
-            ''', (song['title'], song['artist'], song['youtube_id'], song['cover_url']))
-        
-        conn.commit()
+    # If empty, load songs from songs.json file
+    if result[0] == 0 and os.path.exists(SONGS_JSON_FILE):
+        try:
+            with open(SONGS_JSON_FILE, 'r', encoding='utf-8') as f:
+                songs_from_json = json.load(f)
+            
+            # JSON 파일에서 로드한 노래들을 데이터베이스에 추가
+            for song in songs_from_json:
+                # JSON 파일의 형식에 따라 필드 이름이 다를 수 있음
+                title = song.get('title')
+                artist = song.get('artist')
+                youtube_id = song.get('youtube_id')
+                cover_url = song.get('cover_url')
+                
+                if title and artist and youtube_id:
+                    if not cover_url:
+                        cover_url = get_youtube_thumbnail(youtube_id)
+                    
+                    conn.execute('''
+                        INSERT INTO songs (title, artist, youtube_id, cover_url)
+                        VALUES (?, ?, ?, ?)
+                    ''', (title, artist, youtube_id, cover_url))
+            
+            conn.commit()
+            print(f"Loaded {len(songs_from_json)} songs from songs.json")
+        except Exception as e:
+            print(f"Error loading songs from songs.json: {e}")
     
     conn.close()
 
@@ -254,6 +203,46 @@ def remove_all_songs():
     cache.delete_memoized(get_songs)
     
     return jsonify({"status": "success", "message": "모든 노래가 삭제되었습니다."})
+
+@app.route('/api/reset', methods=['POST'])
+def reset_to_json():
+    """데이터베이스를 songs.json 파일의 내용으로 초기화하는 API"""
+    try:
+        # 기존 데이터베이스 내용 삭제
+        conn = get_db_connection()
+        conn.execute('DELETE FROM songs')
+        
+        # songs.json에서 데이터 로드
+        if os.path.exists(SONGS_JSON_FILE):
+            with open(SONGS_JSON_FILE, 'r', encoding='utf-8') as f:
+                songs_from_json = json.load(f)
+            
+            # JSON 파일에서 로드한 노래들을 데이터베이스에 추가
+            for song in songs_from_json:
+                title = song.get('title')
+                artist = song.get('artist')
+                youtube_id = song.get('youtube_id')
+                cover_url = song.get('cover_url')
+                
+                if title and artist and youtube_id:
+                    if not cover_url:
+                        cover_url = get_youtube_thumbnail(youtube_id)
+                    
+                    conn.execute('''
+                        INSERT INTO songs (title, artist, youtube_id, cover_url)
+                        VALUES (?, ?, ?, ?)
+                    ''', (title, artist, youtube_id, cover_url))
+        
+        conn.commit()
+        conn.close()
+        
+        # 캐시 무효화
+        cache.delete_memoized(get_songs)
+        
+        return jsonify({"status": "success", "message": "데이터베이스가 songs.json 파일로 초기화되었습니다."})
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')
