@@ -269,9 +269,25 @@
             }, 150);
         });
         
+        // 배경 이미지 지연 로드
+        window.addEventListener('DOMContentLoaded', function() {
+            const bgContainer = document.getElementById('bg-container');
+            const bgImage = new Image();
+            bgImage.onload = function() {
+                bgContainer.style.backgroundImage = `url('${bgImage.src}')`;
+                bgContainer.style.opacity = '1';
+            };
+            bgImage.onerror = function() {
+                console.warn('배경 이미지 로드 실패, 기본 배경색 사용');
+                bgContainer.style.backgroundColor = '#f5f5f5';
+                bgContainer.style.opacity = '1';
+            };
+            bgImage.src = '/assets/cup_of_coffee_love.gif';
+        });
+        
         // songs.json 파일로 초기화하는 버튼 이벤트 설정
         document.getElementById('reset-to-json-btn').addEventListener('click', async function() {
-            if (confirm('데이터베이스를 songs.json 파일의 내용으로 초기화하시겠습니까? 추가한 노래들이 삭제될 수 있습니다.')) {
+            if (confirm('데이터베이스를 기본 노래 목록으로 초기화하시겠습니까? 추가한 노래들이 삭제될 수 있습니다.')) {
                 try {
                     const response = await fetch('/api/reset', {
                         method: 'POST',
@@ -284,7 +300,7 @@
                         throw new Error('초기화에 실패했습니다.');
                     }
                     
-                    alert('songs.json 파일의 노래 목록으로 초기화되었습니다.');
+                    alert('기본 노래 목록으로 초기화되었습니다.');
                     
                     // 페이지 새로고침
                     window.location.reload();

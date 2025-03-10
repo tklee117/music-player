@@ -48,72 +48,112 @@ def get_youtube_thumbnail(youtube_id):
     return f"https://img.youtube.com/vi/{youtube_id}/hqdefault.jpg"
 
 def get_db_connection():
-    """Get SQLite database connection with UTF-8 support"""
-    conn = sqlite3.connect(DB_FILE)
-    # UTF-8 인코딩 명시적 설정
-    conn.execute('PRAGMA encoding = "UTF-8"')
-    conn.row_factory = sqlite3.Row
-    return conn
-
-def init_db():
-    """Initialize database if it doesn't exist"""
-    conn = get_db_connection()
-    
-    # Create table if not exists
-    conn.execute('''
+    # Vercel의 서버리스 환경에서는 메모리 DB 사용
+    if os.environ.get('VERCEL_ENV') == 'production':
+        conn = sqlite3.connect(':memory:')
+        
+        # 메모리 DB 초기화
+        cursor = conn.cursor()
+        cursor.execute('''
         CREATE TABLE IF NOT EXISTS songs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT NOT NULL,
             artist TEXT NOT NULL,
             youtube_id TEXT NOT NULL,
-            cover_url TEXT NOT NULL
+            cover_url TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-    ''')
-    
-    # Check if table is empty
-    result = conn.execute('SELECT COUNT(*) FROM songs').fetchone()
-    
-    # If empty, load songs from songs.json file
-    if result[0] == 0 and os.path.exists(SONGS_JSON_FILE):
+        ''')
+        conn.commit()
+        
+        # songs.json의 데이터로 초기화
         try:
             with open(SONGS_JSON_FILE, 'r', encoding='utf-8') as f:
-                songs_from_json = json.load(f)
-            
-            # JSON 파일에서 로드한 노래들을 데이터베이스에 추가
-            for song in songs_from_json:
-                # JSON 파일의 형식에 따라 필드 이름이 다를 수 있음
-                title = song.get('title')
-                artist = song.get('artist')
-                youtube_id = song.get('youtube_id')
-                cover_url = song.get('cover_url')
+                songs_data = json.load(f)
                 
-                if title and artist and youtube_id:
-                    if not cover_url:
-                        cover_url = get_youtube_thumbnail(youtube_id)
-                    
-                    conn.execute('''
-                        INSERT INTO songs (title, artist, youtube_id, cover_url)
-                        VALUES (?, ?, ?, ?)
-                    ''', (title, artist, youtube_id, cover_url))
+            for song in songs_data['songs']:
+                youtube_id = song['youtube_id']
+                cover_url = song.get('cover_url') or get_youtube_thumbnail(youtube_id)
+                
+                cursor.execute('''
+                INSERT INTO songs (title, artist, youtube_id, cover_url)
+                VALUES (?, ?, ?, ?)
+                ''', (song['title'], song['artist'], youtube_id, cover_url))
             
             conn.commit()
-            print(f"Loaded {len(songs_from_json)} songs from songs.json")
         except Exception as e:
-            print(f"Error loading songs from songs.json: {e}")
-    
-    conn.close()
+            print(f"Error initializing memory DB: {e}")
+            
+        return conn
+    else:
+        conn = sqlite3.connect(DB_FILE)
+        conn.row_factory = sqlite3.Row
+        return conn
 
-# Initialize database
+def init_db():
+    """Initialize database with songs.json if needed"""
+    # 실제 DB 파일이 있는 경우에만 실행
+    if os.environ.get('VERCEL_ENV') != 'production':
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        
+        # Check if the table exists
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='songs'")
+        table_exists = cursor.fetchone()
+        
+        if not table_exists:
+            print("Creating songs table...")
+            cursor.execute('''
+            CREATE TABLE songs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                artist TEXT NOT NULL,
+                youtube_id TEXT NOT NULL,
+                cover_url TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            ''')
+            conn.commit()
+            
+            # Load initial songs from songs.json
+            if os.path.exists(SONGS_JSON_FILE):
+                try:
+                    with open(SONGS_JSON_FILE, 'r', encoding='utf-8') as f:
+                        songs_data = json.load(f)
+                        
+                    for song in songs_data['songs']:
+                        youtube_id = song['youtube_id']
+                        cover_url = song.get('cover_url') or get_youtube_thumbnail(youtube_id)
+                        
+                        cursor.execute('''
+                        INSERT INTO songs (title, artist, youtube_id, cover_url)
+                        VALUES (?, ?, ?, ?)
+                        ''', (song['title'], song['artist'], youtube_id, cover_url))
+                    
+                    conn.commit()
+                    print(f"Initialized DB with {len(songs_data['songs'])} songs from songs.json")
+                except Exception as e:
+                    print(f"Error loading songs from JSON: {e}")
+            
+        conn.close()
+
+# Initialize database if it doesn't exist
 init_db()
 
-# 정적 파일 서빙 (프론트엔드 파일)
-@app.route('/')
-def serve_frontend():
-    return send_from_directory('frontend', 'index.html')
-
+# Vercel 서버리스 함수 엔드포인트
+@app.route('/', defaults={'path': 'index.html'})
 @app.route('/<path:path>')
+def serve_frontend(path):
+    # frontend 디렉토리에서 파일 제공
+    try:
+        return send_from_directory('frontend', path)
+    except:
+        # 파일이 없으면 index.html로 리다이렉트 (SPA 지원)
+        return send_from_directory('frontend', 'index.html')
+
+@app.route('/static/<path:path>')
 def serve_static(path):
-    return send_from_directory('frontend', path)
+    return send_from_directory('static', path)
 
 # API 엔드포인트들
 @app.route('/api/songs', methods=['GET'])
