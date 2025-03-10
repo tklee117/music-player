@@ -5,9 +5,10 @@ let isPlaying = false;
 let currentSongIndex = 0;
 let songs = [];
 let progressInterval; // 진행 바 업데이트 인터벌
+let isInitialLoad = true; // 초기 로딩 여부 확인 변수 추가
 
 // DOM Elements
-let coverPlayBtn, playBtn, nextBtn, replayBtn, shuffleBtn;
+let coverPlayBtn, playBtn, nextBtn, replayBtn, shuffleBtn, clearPlaylistBtn;
 let songTitle, songArtist, coverImage;
 let playlistContainer, showAddFormBtn, addSongForm, cancelAddFormBtn;
 let progressBar, progressFilled, progressHandle, currentTimeDisplay, durationDisplay;
@@ -27,6 +28,7 @@ function initializeElements() {
     nextBtn = document.getElementById('next-btn');
     replayBtn = document.getElementById('replay-btn');
     shuffleBtn = document.getElementById('shuffle-btn');
+    clearPlaylistBtn = document.getElementById('clear-playlist-btn');
     songTitle = document.getElementById('song-title');
     songArtist = document.getElementById('song-artist');
     coverImage = document.getElementById('cover-image');
@@ -93,7 +95,11 @@ function renderPlaylist() {
     playlistContainer.innerHTML = '';
     
     if (songs.length === 0) {
-        playlistContainer.innerHTML = '<div class="empty-playlist">재생 목록이 비어있습니다</div>';
+        playlistContainer.innerHTML = '<div class="empty-playlist">재생 목록이 비어있습니다<br>노래를 추가해주세요!</div>';
+        // 노래가 없을 때 플레이어 초기화
+        songTitle.textContent = '재생 가능한 노래 없음';
+        songArtist.textContent = '노래를 추가해주세요';
+        coverImage.src = 'https://via.placeholder.com/200?text=NoSong';
         return;
     }
     
@@ -161,6 +167,9 @@ function setupEventListeners() {
     // 셔플 버튼
     shuffleBtn.addEventListener('click', shufflePlaylist);
     
+    // 플레이리스트 초기화 버튼
+    clearPlaylistBtn.addEventListener('click', clearPlaylist);
+    
     // 노래 추가 폼 표시 버튼
     showAddFormBtn.addEventListener('click', () => {
         addSongForm.classList.remove('hidden');
@@ -200,7 +209,7 @@ function setupEventListeners() {
                 const seekTime = duration * percent;
                 
                 player.seekTo(seekTime, true);
-                updateProgressBar(percent);
+                updateProgressInterval();
             }
         });
     }
@@ -275,6 +284,57 @@ function setupEventListeners() {
             submitBtn.disabled = false;
         }
     });
+}
+
+// 플레이리스트 초기화
+async function clearPlaylist() {
+    if (songs.length === 0) return;
+    
+    if (!confirm('정말로 모든 노래를 삭제하시겠습니까?')) return;
+    
+    try {
+        showLoading(true);
+        
+        // 새로운 API 엔드포인트를 통해 모든 노래 한 번에 삭제
+        const response = await fetch('/api/songs/all', {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('플레이리스트를 초기화하는데 실패했습니다.');
+        }
+        
+        // 목록 비우기
+        songs = [];
+        renderPlaylist();
+        
+        // 플레이어 초기화
+        if (player) {
+            player.stopVideo();
+        }
+        
+        isPlaying = false;
+        updatePlayButton();
+        
+        // 진행 바 초기화
+        if (progressFilled && progressHandle) {
+            progressFilled.style.width = '0%';
+            progressHandle.style.left = '0%';
+        }
+        if (currentTimeDisplay && durationDisplay) {
+            currentTimeDisplay.textContent = '0:00';
+            durationDisplay.textContent = '0:00';
+        }
+        
+    } catch (error) {
+        console.error('플레이리스트 초기화 오류:', error);
+        alert('플레이리스트 초기화에 실패했습니다.');
+    } finally {
+        showLoading(false);
+    }
 }
 
 // 진행 바 클릭 이벤트 처리 함수
@@ -393,6 +453,15 @@ function onPlayerReady(event) {
     if (currentTimeDisplay && durationDisplay) {
         currentTimeDisplay.textContent = '0:00';
         durationDisplay.textContent = '0:00';
+    }
+    
+    // 초기 로딩 시 로딩 화면 감추기
+    const initialLoading = document.getElementById('initial-loading');
+    if (initialLoading) {
+        initialLoading.style.opacity = '0';
+        setTimeout(() => {
+            initialLoading.style.display = 'none';
+        }, 500);
     }
 }
 

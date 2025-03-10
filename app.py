@@ -242,5 +242,18 @@ def remove_song(song_id):
     
     return jsonify({"status": "success"})
 
+@app.route('/api/songs/all', methods=['DELETE'])
+def remove_all_songs():
+    """모든 노래 삭제 API"""
+    conn = get_db_connection()
+    conn.execute('DELETE FROM songs')
+    conn.commit()
+    conn.close()
+    
+    # 캐시 무효화
+    cache.delete_memoized(get_songs)
+    
+    return jsonify({"status": "success", "message": "모든 노래가 삭제되었습니다."})
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0')

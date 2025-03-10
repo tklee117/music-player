@@ -252,7 +252,7 @@ body {
     gap: 0.5rem;
 }
 
-.add-song-btn, .shuffle-btn {
+.add-song-btn, .shuffle-btn, .clear-btn {
     font-size: 0.9rem;
     color: #e83e8c;
     background: none;
@@ -263,8 +263,13 @@ body {
     gap: 0.3rem;
 }
 
-.add-song-btn:hover, .shuffle-btn:hover {
+.add-song-btn:hover, .shuffle-btn:hover, .clear-btn:hover {
     text-decoration: underline;
+}
+
+.clear-btn {
+    color: #e83e8c;
+    margin-left: 0.5rem;
 }
 
 .playlist-items {
