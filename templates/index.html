@@ -4,7 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cute Music Player</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Font Awesome 아이콘을 비동기적으로 로드 -->
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"></noscript>
     <style>
         /* Base styling */
         * {
@@ -15,8 +18,7 @@
         }
         
         body {
-            background: url('static/cup_of_coffee_love.gif') no-repeat center center fixed;
-            background-size: cover;
+            background-color: #f5f5f5; /* 배경 이미지가 로드되기 전 배경색 */
             min-height: 100vh;
             display: flex;
             flex-direction: column;
@@ -24,10 +26,24 @@
             padding: 2rem 1rem;
         }
         
+        /* 백그라운드 이미지는 JS로 지연 로딩 */
+        .bg-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background-size: cover;
+            background-position: center center;
+            transition: opacity 0.5s ease;
+            opacity: 0;
+        }
+        
         .container {
             max-width: 400px;
             width: 100%;
-            background: rgba(255, 255, 255, 0.5); /* Changed from 0.7 to 0.5 for more transparency */
+            background: rgba(255, 255, 255, 0.5);
             border-radius: 20px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             overflow: hidden;
@@ -385,11 +401,14 @@
     </style>
 </head>
 <body>
+    <!-- 배경 이미지 컨테이너 추가 -->
+    <div class="bg-container" id="bg-container"></div>
+    
     <div class="container">
         <div class="player-container">
             <!-- Cover art with play button -->
             <div class="song-cover">
-                <img id="cover-image" src="https://img.youtube.com/vi/dK5zGe-K0Y0/0.jpg" alt="Song cover">
+                <img id="cover-image" src="https://via.placeholder.com/200?text=Loading..." alt="Song cover" loading="lazy">
                 <div class="play-btn" id="cover-play-btn">
                     <i class="fas fa-play"></i>
                 </div>
@@ -397,8 +416,8 @@
             
             <!-- Song info -->
             <div class="song-info">
-                <div class="song-title" id="song-title">Flowers</div>
-                <div class="song-artist" id="song-artist">Miley Cyrus</div>
+                <div class="song-title" id="song-title">Loading...</div>
+                <div class="song-artist" id="song-artist">Please wait</div>
             </div>
             
             <!-- Controls -->
@@ -459,12 +478,12 @@
             <div class="playlist-items" id="playlist-container">
                 {% for song in songs %}
                 <div class="playlist-item{% if song.is_new_added %} new-added{% endif %}" data-id="{{ song.id }}" data-youtube-id="{{ song.youtube_id }}">
-                    <img class="playlist-item-img" src="{{ song.cover_url }}" alt="{{ song.title }}">
+                    <img class="playlist-item-img" src="{{ song.cover_url }}" alt="{{ song.title }}" loading="lazy">
                     <div class="playlist-item-info">
                         <div class="playlist-item-title">{{ song.title }}</div>
                         <div class="playlist-item-artist">{{ song.artist }}</div>
                     </div>
-                    <button class="delete-song-btn" onclick="deleteSong({{ song.id }}, event)">
+                    <button class="delete-song-btn" data-id="{{ song.id }}">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -477,29 +496,100 @@
         Made with ❤️ just for you
     </div>
 
-    <!-- YouTube API -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-    <script src="https://www.youtube.com/iframe_api"></script>
+    <!-- 필수 스크립트만 먼저 로드, jQuery 제거 -->
     <script>
-        // YouTube player
+        // DOM elements
         let player;
         let currentVideoId = '';
         let isPlaying = false;
         let currentSongIndex = 0;
         
-        // DOM elements
-        const coverPlayBtn = document.getElementById('cover-play-btn');
-        const playBtn = document.getElementById('play-btn');
-        const nextBtn = document.getElementById('next-btn');
-        const replayBtn = document.getElementById('replay-btn');
-        const shuffleBtn = document.getElementById('shuffle-btn');
-        const songTitle = document.getElementById('song-title');
-        const songArtist = document.getElementById('song-artist');
-        const coverImage = document.getElementById('cover-image');
-        const playlistContainer = document.getElementById('playlist-container');
-        const showAddFormBtn = document.getElementById('show-add-form-btn');
-        const addSongForm = document.getElementById('add-song-form');
-        const cancelAddFormBtn = document.getElementById('cancel-add-form-btn');
+        document.addEventListener('DOMContentLoaded', function() {
+            // 배경 이미지 지연 로드
+            const bgContainer = document.getElementById('bg-container');
+            const bgImage = new Image();
+            bgImage.onload = function() {
+                bgContainer.style.backgroundImage = `url('${bgImage.src}')`;
+                bgContainer.style.opacity = '1';
+            };
+            bgImage.src = '/static/cup_of_coffee_love.gif';
+            
+            // DOM elements
+            const coverPlayBtn = document.getElementById('cover-play-btn');
+            const playBtn = document.getElementById('play-btn');
+            const nextBtn = document.getElementById('next-btn');
+            const replayBtn = document.getElementById('replay-btn');
+            const shuffleBtn = document.getElementById('shuffle-btn');
+            const songTitle = document.getElementById('song-title');
+            const songArtist = document.getElementById('song-artist');
+            const coverImage = document.getElementById('cover-image');
+            const playlistContainer = document.getElementById('playlist-container');
+            const showAddFormBtn = document.getElementById('show-add-form-btn');
+            const addSongForm = document.getElementById('add-song-form');
+            const cancelAddFormBtn = document.getElementById('cancel-add-form-btn');
+            
+            // 삭제 버튼 이벤트 위임
+            document.querySelectorAll('.delete-song-btn').forEach(btn => {
+                btn.addEventListener('click', function(event) {
+                    event.stopPropagation();
+                    const songId = this.getAttribute('data-id');
+                    deleteSong(songId, event);
+                });
+            });
+            
+            // Event listeners
+            // Play/pause buttons
+            coverPlayBtn.addEventListener('click', togglePlay);
+            playBtn.addEventListener('click', togglePlay);
+            
+            // Next button
+            nextBtn.addEventListener('click', playNext);
+            
+            // Replay button
+            replayBtn.addEventListener('click', replaySong);
+            
+            // Shuffle button
+            shuffleBtn.addEventListener('click', shufflePlaylist);
+            
+            // Playlist item click
+            document.querySelectorAll('.playlist-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    loadSong(this);
+                    // Start playing when clicked
+                    if (player) {
+                        player.playVideo();
+                    }
+                });
+            });
+            
+            // Show add form button
+            showAddFormBtn.addEventListener('click', function() {
+                addSongForm.classList.remove('hidden');
+            });
+            
+            // Cancel add form button
+            cancelAddFormBtn.addEventListener('click', function() {
+                addSongForm.classList.add('hidden');
+            });
+
+            // Remove new-added class after some time
+            setTimeout(() => {
+                document.querySelectorAll('.new-added').forEach(item => {
+                    item.classList.remove('new-added');
+                });
+            }, 10000);  // Remove after 10 seconds
+            
+            // 유튜브 API 로드
+            loadYoutubeApi();
+        });
+        
+        // 유튜브 API 스크립트 지연 로드
+        function loadYoutubeApi() {
+            const tag = document.createElement('script');
+            tag.src = "https://www.youtube.com/iframe_api";
+            const firstScriptTag = document.getElementsByTagName('script')[0];
+            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        }
         
         // YouTube API ready
         function onYouTubeIframeAPIReady() {
@@ -680,10 +770,7 @@
         
         // Delete a song
         function deleteSong(songId, event) {
-            // Prevent the click from propagating to the playlist item
-            event.stopPropagation();
-            
-            // Send delete request
+            // Fetch API 사용
             fetch(`/remove_song/${songId}`, {
                 method: 'POST',
                 headers: {
@@ -711,50 +798,6 @@
                 }
             });
         }
-        
-        // Event listeners
-        document.addEventListener('DOMContentLoaded', function() {
-            // Play/pause buttons
-            coverPlayBtn.addEventListener('click', togglePlay);
-            playBtn.addEventListener('click', togglePlay);
-            
-            // Next button
-            nextBtn.addEventListener('click', playNext);
-            
-            // Replay button
-            replayBtn.addEventListener('click', replaySong);
-            
-            // Shuffle button
-            shuffleBtn.addEventListener('click', shufflePlaylist);
-            
-            // Playlist item click
-            document.querySelectorAll('.playlist-item').forEach(item => {
-                item.addEventListener('click', function() {
-                    loadSong(this);
-                    // Start playing when clicked
-                    if (player) {
-                        player.playVideo();
-                    }
-                });
-            });
-            
-            // Show add form button
-            showAddFormBtn.addEventListener('click', function() {
-                addSongForm.classList.remove('hidden');
-            });
-            
-            // Cancel add form button
-            cancelAddFormBtn.addEventListener('click', function() {
-                addSongForm.classList.add('hidden');
-            });
-
-            // Remove new-added class after some time
-            setTimeout(() => {
-                document.querySelectorAll('.new-added').forEach(item => {
-                    item.classList.remove('new-added');
-                });
-            }, 10000);  // Remove after 10 seconds
-        });
     </script>
 </body>
 </html>

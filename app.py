@@ -1,16 +1,27 @@
 # app.py
-from flask import Flask, render_template, request, redirect, url_for, jsonify
+from flask import Flask, jsonify, request, send_from_directory
 import os
-import json
+import sqlite3
 from urllib.parse import urlparse, parse_qs
+from flask_caching import Cache
+import time
+from flask_cors import CORS  # CORS 지원 추가
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='frontend')
+CORS(app)  # 모든 경로에서 CORS 허용
 
-# Define an absolute path to store songs.json
-# This ensures it's saved in a known, persistent location
+# 한글 지원을 위한 Flask 설정
+app.config['JSON_AS_ASCII'] = False  # JSON 응답에서 유니코드 문자가 이스케이프되지 않도록 설정
+
+# 캐싱 설정
+cache = Cache(app, config={
+    'CACHE_TYPE': 'SimpleCache',
+    'CACHE_DEFAULT_TIMEOUT': 300  # 5분
+})
+
+# Define an absolute path for database
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-SONGS_FILE = os.path.join(BASE_DIR, 'songs.json')
-
+DB_FILE = os.path.join(BASE_DIR, 'songs.db')
 
 def get_youtube_id(url):
     """Extract YouTube ID from URL"""
@@ -31,144 +42,205 @@ def get_youtube_id(url):
         
     return None
 
-def load_songs():
-    """Load songs from JSON file"""
-    try:
-        if os.path.exists(SONGS_FILE):
-            with open(SONGS_FILE, 'r') as f:
-                return json.load(f)
-    except (json.JSONDecodeError, IOError) as e:
-        print(f"Error loading songs: {e}")
-    return []
-
-def save_songs(songs):
-    """Save songs to JSON file"""
-    try:
-        # Make sure directory exists
-        os.makedirs(os.path.dirname(SONGS_FILE), exist_ok=True)
-        with open(SONGS_FILE, 'w') as f:
-            json.dump(songs, f, indent=2)
-    except IOError as e:
-        print(f"Error saving songs: {e}")
-
 def get_youtube_thumbnail(youtube_id):
     return f"https://img.youtube.com/vi/{youtube_id}/hqdefault.jpg"
 
-# Initialize with some default songs if file doesn't exist
-if not os.path.exists(SONGS_FILE):
-    default_songs = [
-        {
-            "id": 1,
-            "title": "Get You",
-            "artist": "Daniel Caesar (feat. Kali Uchis)",
-            "youtube_id": "WFLGrpGemLg",
-            "cover_url": "https://img.youtube.com/vi/WFLGrpGemLg/0.jpg"
-        },
-        {
-            "id": 2,
-            "title": "Give Me Mercy",
-            "artist": "The Weeknd",
-            "youtube_id": "cVoO8ZYXkrQ",
-            "cover_url": "https://img.youtube.com/vi/cVoO8ZYXkrQ/hqdefault.jpg"
-        },
-        {
-            "id": 3,
-            "title": "New Year",
-            "artist": "Mk.gee",
-            "youtube_id": "iGQjD4gOzNM",
-            "cover_url": "https://img.youtube.com/vi/iGQjD4gOzNM/hqdefault.jpg"
-        },
-        {
-            "id": 4,
-            "title": "Thinkin Bout You",
-            "artist": "Frank Ocean",
-            "youtube_id": "6JHu3b-pbh8",
-            "cover_url": "https://img.youtube.com/vi/6JHu3b-pbh8/hqdefault.jpg"
-        },
-        {
-            "id": 5,
-            "title": "Let's go watch the stars",
-            "artist": "Jeok-Jae",
-            "youtube_id": "Mz031oU0Xfw",
-            "cover_url": "https://img.youtube.com/vi/Mz031oU0Xfw/hqdefault.jpg"
-        },
-        {
-            "id": 6,
-            "title": "Luther",
-            "artist": "Kendrick Lamar (feat. SZA)",
-            "youtube_id": "HfWLgELllZs",
-            "cover_url": "https://img.youtube.com/vi/HfWLgELllZs/hqdefault.jpg"
-        }
-    ]
-    save_songs(default_songs)
+def get_db_connection():
+    """Get SQLite database connection with UTF-8 support"""
+    conn = sqlite3.connect(DB_FILE)
+    # UTF-8 인코딩 명시적 설정
+    conn.execute('PRAGMA encoding = "UTF-8"')
+    conn.row_factory = sqlite3.Row
+    return conn
 
+def init_db():
+    """Initialize database if it doesn't exist"""
+    conn = get_db_connection()
+    
+    # Create table if not exists
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS songs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            artist TEXT NOT NULL,
+            youtube_id TEXT NOT NULL,
+            cover_url TEXT NOT NULL
+        )
+    ''')
+    
+    # Check if table is empty
+    result = conn.execute('SELECT COUNT(*) FROM songs').fetchone()
+    
+    # If empty, add default songs
+    if result[0] == 0:
+        default_songs = [
+            # songs.json에 있던 노래들 추가
+            {
+                "title": "Star",
+                "artist": "Mingginyu",
+                "youtube_id": "0t_ORa7dmO4",
+                "cover_url": "https://img.youtube.com/vi/0t_ORa7dmO4/hqdefault.jpg"
+            },
+            {
+                "title": "My shadow",
+                "artist": "The Black Skirts",
+                "youtube_id": "T15zuMtqBoE",
+                "cover_url": "https://img.youtube.com/vi/T15zuMtqBoE/hqdefault.jpg"
+            },
+            {
+                "title": "Luther",
+                "artist": "Kendrick Lamar (feat. SZA)",
+                "youtube_id": "HfWLgELllZs",
+                "cover_url": "https://img.youtube.com/vi/HfWLgELllZs/hqdefault.jpg"
+            },
+            {
+                "title": "Get You",
+                "artist": "Daniel Caesar (feat. Kali Uchis)",
+                "youtube_id": "WFLGrpGemLg",
+                "cover_url": "https://img.youtube.com/vi/WFLGrpGemLg/0.jpg"
+            },
+            {
+                "title": "Give Me Mercy",
+                "artist": "The Weeknd",
+                "youtube_id": "cVoO8ZYXkrQ",
+                "cover_url": "https://img.youtube.com/vi/cVoO8ZYXkrQ/hqdefault.jpg"
+            },
+            {
+                "title": "New Year",
+                "artist": "Mk.gee",
+                "youtube_id": "iGQjD4gOzNM",
+                "cover_url": "https://img.youtube.com/vi/iGQjD4gOzNM/hqdefault.jpg"
+            },
+            {
+                "title": "Thinkin Bout You",
+                "artist": "Frank Ocean",
+                "youtube_id": "6JHu3b-pbh8",
+                "cover_url": "https://img.youtube.com/vi/6JHu3b-pbh8/hqdefault.jpg"
+            },
+            {
+                "title": "Let's go watch the stars",
+                "artist": "Jeok-Jae",
+                "youtube_id": "Mz031oU0Xfw",
+                "cover_url": "https://img.youtube.com/vi/Mz031oU0Xfw/hqdefault.jpg"
+            },
+            # 한국어 노래 샘플 추가
+            {
+                "title": "사랑은 늘 도망가",
+                "artist": "임영웅",
+                "youtube_id": "z_8tUyl1eMo",
+                "cover_url": "https://img.youtube.com/vi/z_8tUyl1eMo/hqdefault.jpg"
+            },
+            {
+                "title": "봄여름가을겨울",
+                "artist": "BIGBANG (빅뱅)",
+                "youtube_id": "zZLz_u0trPI",
+                "cover_url": "https://img.youtube.com/vi/zZLz_u0trPI/hqdefault.jpg"
+            },
+            {
+                "title": "밤편지",
+                "artist": "아이유 (IU)",
+                "youtube_id": "BzYnNdJhZQw",
+                "cover_url": "https://img.youtube.com/vi/BzYnNdJhZQw/hqdefault.jpg"
+            }
+        ]
+        
+        for song in default_songs:
+            conn.execute('''
+                INSERT INTO songs (title, artist, youtube_id, cover_url)
+                VALUES (?, ?, ?, ?)
+            ''', (song['title'], song['artist'], song['youtube_id'], song['cover_url']))
+        
+        conn.commit()
+    
+    conn.close()
+
+# Initialize database
+init_db()
+
+# 정적 파일 서빙 (프론트엔드 파일)
 @app.route('/')
-def index():
-    """Render the main music player page"""
-    songs = load_songs()
-    
-    # Check for newly added song from session
-    new_song_id = request.args.get('new_song_id')
-    if new_song_id:
-        try:
-            new_song_id = int(new_song_id)
-            # Mark the new song
-            for song in songs:
-                if song.get('id') == new_song_id:
-                    song['is_new_added'] = True
-                else:
-                    song['is_new_added'] = False
-        except ValueError:
-            pass
-    
-    return render_template('index.html', songs=songs)
+def serve_frontend():
+    return send_from_directory('frontend', 'index.html')
 
-@app.route('/add_song', methods=['POST'])
+@app.route('/<path:path>')
+def serve_static(path):
+    return send_from_directory('frontend', path)
+
+# API 엔드포인트들
+@app.route('/api/songs', methods=['GET'])
+@cache.cached(timeout=60)  # 1분 캐싱
+def get_songs():
+    """모든 노래 목록 반환 API"""
+    start_time = time.time()
+    
+    conn = get_db_connection()
+    songs = conn.execute('SELECT * FROM songs').fetchall()
+    conn.close()
+    
+    songs_list = [dict(song) for song in songs]
+    
+    # 페이지 로딩 시간 측정
+    end_time = time.time()
+    print(f"API rendered in {end_time - start_time:.4f} seconds")
+    
+    return jsonify(songs_list)
+
+@app.route('/api/songs', methods=['POST'])
 def add_song():
-    """Add a new song to the playlist"""
-    title = request.form.get('title')
-    artist = request.form.get('artist')
-    youtube_url = request.form.get('youtube_url')
+    """노래 추가 API"""
+    data = request.json
+    
+    title = data.get('title')
+    artist = data.get('artist')
+    youtube_url = data.get('youtube_url')
+    
+    if not title or not artist or not youtube_url:
+        return jsonify({"error": "Missing required fields"}), 400
     
     youtube_id = get_youtube_id(youtube_url)
     
     if not youtube_id:
-        # Redirect back with error
-        return redirect(url_for('index'))
+        return jsonify({"error": "Invalid YouTube URL"}), 400
     
-    # Load current songs
-    songs = load_songs()
+    cover_url = get_youtube_thumbnail(youtube_id)
     
-    # Generate a new ID
-    new_id = 1
-    if songs:
-        new_id = max(song.get('id', 0) for song in songs) + 1
+    # Insert new song into database
+    conn = get_db_connection()
+    cursor = conn.execute('''
+        INSERT INTO songs (title, artist, youtube_id, cover_url)
+        VALUES (?, ?, ?, ?)
+    ''', (title, artist, youtube_id, cover_url))
     
-    # Create new song
-    new_song = {
+    # Get the new song ID
+    new_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    
+    # 캐시 무효화
+    cache.delete_memoized(get_songs)
+    
+    # 새 노래 정보 반환
+    return jsonify({
         "id": new_id,
         "title": title,
         "artist": artist,
         "youtube_id": youtube_id,
-        "cover_url": get_youtube_thumbnail(youtube_id)
-    }
-    
-    # Add to list
-    songs.append(new_song)
-    
-    # Save the updated songs list
-    save_songs(songs)
-    
-    # Redirect back with the new song ID
-    return redirect(url_for('index', new_song_id=new_id))
+        "cover_url": cover_url,
+        "is_new_added": True
+    }), 201
 
-@app.route('/remove_song/<int:song_id>', methods=['POST'])
+@app.route('/api/songs/<int:song_id>', methods=['DELETE'])
 def remove_song(song_id):
-    """Remove a song from the playlist"""
-    songs = load_songs()
-    songs = [song for song in songs if song.get('id') != song_id]
-    save_songs(songs)
+    """노래 삭제 API"""
+    conn = get_db_connection()
+    conn.execute('DELETE FROM songs WHERE id = ?', (song_id,))
+    conn.commit()
+    conn.close()
+    
+    # 캐시 무효화
+    cache.delete_memoized(get_songs)
+    
     return jsonify({"status": "success"})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0')
