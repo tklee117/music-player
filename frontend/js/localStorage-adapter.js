@@ -83,11 +83,9 @@ function initLocalStorage() {
  */
 async function getSongs() {
   return new Promise((resolve) => {
-    // 약간의 딜레이를 추가하여 API 호출처럼 보이게 함
-    setTimeout(() => {
-      const songs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-      resolve(songs);
-    }, 300);
+    // 불필요한 딜레이 제거
+    const songs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    resolve(songs);
   });
 }
 
@@ -124,10 +122,8 @@ async function addSong(songData) {
     // localStorage 업데이트
     localStorage.setItem(STORAGE_KEY, JSON.stringify(songs));
     
-    // 약간의 딜레이 추가
-    setTimeout(() => {
-      resolve(newSong);
-    }, 300);
+    // 불필요한 딜레이 제거
+    resolve(newSong);
   });
 }
 
@@ -146,10 +142,8 @@ async function deleteSong(songId) {
     // localStorage 업데이트
     localStorage.setItem(STORAGE_KEY, JSON.stringify(filteredSongs));
     
-    // 약간의 딜레이 추가
-    setTimeout(() => {
-      resolve({ status: 'success' });
-    }, 200);
+    // 불필요한 딜레이 제거
+    resolve({ status: 'success' });
   });
 }
 
@@ -162,10 +156,8 @@ async function deleteAllSongs() {
     // 빈 배열로 업데이트
     localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
     
-    // 약간의 딜레이 추가
-    setTimeout(() => {
-      resolve({ status: 'success' });
-    }, 200);
+    // 불필요한 딜레이 제거
+    resolve({ status: 'success' });
   });
 }
 
@@ -178,10 +170,8 @@ async function resetToDefault() {
     // 초기 데이터로 초기화
     localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_SONGS));
     
-    // 약간의 딜레이 추가
-    setTimeout(() => {
-      resolve({ status: 'success' });
-    }, 300);
+    // 불필요한 딜레이 제거
+    resolve({ status: 'success' });
   });
 }
 

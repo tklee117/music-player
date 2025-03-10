@@ -5,6 +5,7 @@ let isPlaying = false;
 let currentSongIndex = 0;
 let songs = [];
 let progressInterval;
+let youtubeAPILoaded = false;  // YouTube API 로드 상태 추적
 
 // DOM Elements
 let coverPlayBtn, playBtn, nextBtn, replayBtn, shuffleBtn, clearPlaylistBtn;
@@ -54,12 +55,14 @@ async function loadSongs() {
         // localStorage 초기화
         initLocalStorage();
         
-        // 노래 목록 가져오기
+        // 노래 목록 가져오기 (지연 없이 빠르게 로드)
         songs = await getSongs();
         renderPlaylist();
         
-        // 유튜브 API 로드
-        loadYoutubeApi();
+        // 유튜브 API 로드 시작 (페이지 로딩이 완료된 후에 로드)
+        setTimeout(() => {
+            loadYoutubeApi();
+        }, 1000);  // 1초 지연 후 YouTube API 로드
     } catch (error) {
         console.error('노래 목록 로드 오류:', error);
         showError('노래 목록을 로드하는데 실패했습니다.');
@@ -226,14 +229,16 @@ async function deleteSongItem(songId) {
     }
 }
 
-// 로딩 표시
+// 로딩 상태 표시
 function showLoading(isLoading) {
-    playlistContainer.innerHTML = '';
-    if (isLoading) {
-        const loading = document.createElement('div');
-        loading.className = 'loading';
-        loading.innerHTML = '<div class="loading-spinner"></div>';
-        playlistContainer.appendChild(loading);
+    const loadingElement = playlistContainer.querySelector('.loading');
+    if (loadingElement) {
+        if (isLoading) {
+            loadingElement.style.display = 'flex';
+        } else {
+            // 로딩 상태가 끝나면 즉시 숨김
+            loadingElement.style.display = 'none';
+        }
     }
 }
 
@@ -425,29 +430,54 @@ function formatTime(seconds) {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
 }
 
-// 유튜브 API 로드
+// YouTube API 로드 (최적화 버전)
 function loadYoutubeApi() {
+    if (youtubeAPILoaded) return; // 이미 로드된 경우 중복 로드 방지
+    
+    youtubeAPILoaded = true;
     const tag = document.createElement('script');
     tag.src = "https://www.youtube.com/iframe_api";
+    tag.async = true; // 비동기 로드
+    
+    // API 로드 오류 처리
+    tag.onerror = () => {
+        console.error('YouTube API 로드 실패');
+        youtubeAPILoaded = false;
+    };
+    
     const firstScriptTag = document.getElementsByTagName('script')[0];
     firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 }
 
 // YouTube API ready 콜백
 function onYouTubeIframeAPIReady() {
-    player = new YT.Player('youtube-player', {
-        height: '0',
-        width: '0',
-        playerVars: {
-            'playsinline': 1,
-            'controls': 0,
-            'disablekb': 1
-        },
-        events: {
-            'onReady': onPlayerReady,
-            'onStateChange': onPlayerStateChange
-        }
-    });
+    // 플레이어 생성 전에 DOM 요소 확인
+    const youtubePlayerElement = document.getElementById('youtube-player');
+    if (!youtubePlayerElement) {
+        console.error('YouTube 플레이어 요소를 찾을 수 없습니다.');
+        return;
+    }
+    
+    try {
+        player = new YT.Player('youtube-player', {
+            height: '0',
+            width: '0',
+            playerVars: {
+                'playsinline': 1,
+                'controls': 0,
+                'disablekb': 1,
+                'rel': 0,
+                'modestbranding': 1
+            },
+            events: {
+                'onReady': onPlayerReady,
+                'onStateChange': onPlayerStateChange,
+                'onError': onPlayerError
+            }
+        });
+    } catch (error) {
+        console.error('YouTube 플레이어 초기화 오류:', error);
+    }
 }
 
 // 플레이어 준비 완료 콜백
@@ -642,4 +672,11 @@ function shufflePlaylist() {
     // 새로운 노래 목록 저장
     songs = newSongs;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(songs));
+}
+
+// 플레이어 오류 처리 추가
+function onPlayerError(event) {
+    console.error('YouTube 플레이어 오류:', event.data);
+    // 다음 노래 재생 시도
+    playNext();
 } 

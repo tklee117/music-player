@@ -694,17 +694,15 @@
     </div>
 
     <!-- 자바스크립트 -->
-    <script src="./frontend/js/localStorage-adapter.js"></script>
-    <script src="./frontend/js/app-static.js"></script>
     <script>
-        // 로딩 진행 표시기 업데이트
+        // 즉시 로딩 진행표시기 인터페이스 설정
         const progressBar = document.getElementById('loading-progress-bar');
         const initialLoading = document.getElementById('initial-loading');
         
         // 로딩 진행률 시뮬레이션 - 더 빠르게 진행되도록 조정
         let progress = 0;
         const loadingInterval = setInterval(() => {
-            progress += Math.random() * 5;  // 진행률을 더 빠르게 증가
+            progress += Math.random() * 10;  // 진행률을 더 빠르게 증가
             
             if (progress >= 100) {
                 progress = 100;
@@ -712,34 +710,69 @@
             }
             
             progressBar.style.width = `${progress}%`;
-        }, 150);  // 인터벌 시간 단축
+        }, 50);  // 인터벌 시간 대폭 단축
         
-        // 컨텐츠 로드 완료 되면 로딩 화면 즉시 숨기기
-        window.addEventListener('load', () => {
+        // 필요한 스크립트 파일 사전 로드
+        const preloadScripts = ['./frontend/js/localStorage-adapter.js', './frontend/js/app-static.js'];
+        let loadedScripts = 0;
+        
+        preloadScripts.forEach(src => {
+            const script = document.createElement('script');
+            script.src = src;
+            script.async = true;
+            script.onload = () => {
+                loadedScripts++;
+                if (loadedScripts === preloadScripts.length) {
+                    // 모든 스크립트 로드 완료
+                    hideLoadingScreen();
+                }
+            };
+            script.onerror = () => {
+                console.error('스크립트 로드 실패:', src);
+                // 에러가 있어도 로딩 화면 숨기기
+                loadedScripts++;
+                if (loadedScripts === preloadScripts.length) {
+                    hideLoadingScreen();
+                }
+            };
+            document.body.appendChild(script);
+        });
+        
+        // 로딩 화면 숨기기 함수
+        function hideLoadingScreen() {
             progressBar.style.width = '100%';
+            // 배경 이미지를 미리 로드
+            preloadBackgroundImage();
+            
             setTimeout(() => {
                 initialLoading.style.opacity = '0';
                 setTimeout(() => {
                     initialLoading.style.display = 'none';
-                }, 300);
-            }, 150);
-        });
+                }, 200);
+            }, 100);
+        }
         
-        // 배경 이미지 지연 로드
-        window.addEventListener('DOMContentLoaded', function() {
+        // 배경 이미지 최적화 로드 방식
+        function preloadBackgroundImage() {
             const bgContainer = document.getElementById('bg-container');
-            const bgImage = new Image();
-            bgImage.onload = function() {
-                bgContainer.style.backgroundImage = `url('${bgImage.src}')`;
-                bgContainer.style.opacity = '1';
-            };
-            bgImage.onerror = function() {
-                console.warn('배경 이미지 로드 실패, 기본 배경색 사용');
-                bgContainer.style.backgroundColor = '#f5f5f5';
-                bgContainer.style.opacity = '1';
-            };
-            bgImage.src = './static/assets/cup_of_coffee_love.gif';
-        });
+            
+            // 배경 이미지 대신 색상 그라데이션 사용 - 더 빠른 로딩 속도
+            bgContainer.style.background = 'linear-gradient(135deg, #f5f5f5 0%, #e6e9f0 100%)';
+            bgContainer.style.opacity = '1';
+            
+            // 배경 이미지는 사용자 상호작용 후 지연 로드 (선택 사항)
+            setTimeout(() => {
+                // 필요한 경우 나중에 실제 배경 이미지로 교체
+                const bgImage = new Image();
+                bgImage.onload = function() {
+                    bgContainer.style.backgroundImage = `url('${bgImage.src}')`;
+                };
+                bgImage.src = './static/assets/cup_of_coffee_love.gif';
+            }, 3000); // 3초 후 배경 이미지 로드 시도
+        }
+        
+        // 페이지 로드 완료 시 로딩 화면 즉시 숨기기
+        window.addEventListener('load', hideLoadingScreen);
     </script>
 </body>
 </html> 
