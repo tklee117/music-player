@@ -1,0 +1,501 @@
+/* Base styling */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Noto Sans KR', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: #f5f5f5; /* 배경 이미지가 로드되기 전 배경색 */
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem;
+}
+
+/* 백그라운드 이미지는 JS로 지연 로딩 */
+.bg-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    background-size: cover;
+    background-position: center center;
+    transition: opacity 0.5s ease;
+    opacity: 0;
+}
+
+.container {
+    max-width: 400px;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    padding-bottom: 1rem;
+}
+
+/* Music player styling */
+.player-container {
+    position: relative;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.song-cover {
+    width: 200px;
+    height: 200px;
+    border-radius: 15px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    margin-bottom: 1.5rem;
+    background-color: rgba(238, 238, 238, 0.7);
+}
+
+.song-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.song-cover:hover img {
+    transform: scale(1.05);
+}
+
+.play-btn {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.play-btn:hover {
+    background: rgba(255, 255, 255, 0.9);
+    transform: translate(-50%, -50%) scale(1.1);
+}
+
+.play-btn i {
+    color: #e83e8c;
+    font-size: 2rem;
+    padding-left: 5px;
+}
+
+.song-info {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.song-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.5rem;
+    word-break: keep-all; /* 한글 단어 분리 방지 */
+    line-height: 1.3;
+}
+
+.song-artist {
+    font-size: 1rem;
+    color: #666;
+    word-break: keep-all; /* 한글 단어 분리 방지 */
+}
+
+/* 재생 진행 바 스타일 */
+.progress-container {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding: 0 0.5rem;
+}
+
+.progress-bar {
+    flex: 1;
+    height: 6px;
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 3px;
+    margin: 0 10px;
+    position: relative;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.progress-filled {
+    height: 100%;
+    width: 0;
+    background-color: #e83e8c;
+    border-radius: 3px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    transition: width 0.1s ease-in-out;
+}
+
+.progress-handle {
+    width: 12px;
+    height: 12px;
+    background-color: #e83e8c;
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 0;
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+}
+
+.progress-bar:hover .progress-handle {
+    opacity: 1;
+}
+
+.time-display {
+    font-size: 0.8rem;
+    color: #666;
+    min-width: 40px;
+}
+
+.current-time {
+    text-align: right;
+}
+
+.duration {
+    text-align: left;
+}
+
+.controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.control-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.control-btn i {
+    color: #666;
+    font-size: 1.2rem;
+}
+
+.control-btn:hover i {
+    color: #e83e8c;
+}
+
+.play-control {
+    width: 50px;
+    height: 50px;
+    background: rgba(232, 62, 140, 0.8);
+    border-radius: 50%;
+}
+
+.play-control i {
+    color: white;
+    font-size: 1.5rem;
+    padding-left: 3px;
+}
+
+.play-control.pause i {
+    padding-left: 0;
+}
+
+/* Playlist styling */
+.playlist {
+    margin-top: 1rem;
+    padding: 0 1.5rem;
+}
+
+.playlist-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.playlist-title {
+    font-size: 1rem;
+    color: #555;
+    font-weight: 600;
+}
+
+.playlist-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.add-song-btn, .shuffle-btn, .clear-btn {
+    font-size: 0.9rem;
+    color: #e83e8c;
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.add-song-btn:hover, .shuffle-btn:hover, .clear-btn:hover {
+    text-decoration: underline;
+}
+
+.clear-btn {
+    color: #e83e8c;
+    margin-left: 0.5rem;
+}
+
+.playlist-items {
+    max-height: 200px;
+    overflow-y: auto;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.playlist-item {
+    display: flex;
+    align-items: center;
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    position: relative;
+}
+
+.playlist-item:hover {
+    background: #f0f1f3;
+}
+
+.playlist-item.active {
+    background: #f8e1eb;
+}
+
+.playlist-item.new-added {
+    animation: highlight-pulse 2s infinite;
+}
+
+@keyframes highlight-pulse {
+    0% { box-shadow: inset 0 0 0 2px rgba(232, 62, 140, 0.4); }
+    50% { box-shadow: inset 0 0 0 2px rgba(232, 62, 140, 0.8); }
+    100% { box-shadow: inset 0 0 0 2px rgba(232, 62, 140, 0.4); }
+}
+
+.playlist-item-img {
+    width: 40px;
+    height: 40px;
+    border-radius: 5px;
+    margin-right: 0.8rem;
+    object-fit: cover;
+}
+
+.playlist-item-info {
+    flex: 1;
+}
+
+.playlist-item-title {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 0.2rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: keep-all; /* 한글 단어 분리 방지 */
+}
+
+.playlist-item-artist {
+    font-size: 0.8rem;
+    color: #777;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: keep-all; /* 한글 단어 분리 방지 */
+}
+
+.delete-song-btn {
+    opacity: 0;
+    background: none;
+    border: none;
+    color: #e83e8c;
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 0.2rem;
+    transition: opacity 0.2s ease;
+}
+
+.playlist-item:hover .delete-song-btn {
+    opacity: 1;
+}
+
+.playing-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #e83e8c;
+    margin-left: 0.5rem;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(0.8); opacity: 0.5; }
+    50% { transform: scale(1.2); opacity: 1; }
+    100% { transform: scale(0.8); opacity: 0.5; }
+}
+
+/* Add song form */
+.add-song-form {
+    background: white;
+    padding: 1rem;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+}
+
+.form-group {
+    margin-bottom: 0.8rem;
+}
+
+.form-label {
+    display: block;
+    font-size: 0.9rem;
+    margin-bottom: 0.3rem;
+    color: #555;
+}
+
+.form-input {
+    width: 100%;
+    padding: 0.6rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-family: 'Noto Sans KR', sans-serif; /* 한글 폰트 명시적 설정 */
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #e83e8c;
+}
+
+.form-submit {
+    width: 100%;
+    padding: 0.7rem;
+    background: #e83e8c;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.form-submit:hover {
+    background: #d3277a;
+}
+
+.cancel-btn {
+    text-align: center;
+    margin-top: 0.5rem;
+}
+
+.cancel-btn button {
+    background: none;
+    border: none;
+    font-size: 0.8rem;
+    color: #777;
+    cursor: pointer;
+}
+
+.cancel-btn button:hover {
+    color: #333;
+    text-decoration: underline;
+}
+
+/* Hidden elements */
+.hidden {
+    display: none;
+}
+
+/* Footer */
+.footer {
+    margin-top: 2rem;
+    text-align: center;
+    font-size: 0.8rem;
+    color: #777;
+}
+
+/* Responsive design */
+@media (max-width: 480px) {
+    .song-cover {
+        width: 200px;
+        height: 200px;
+    }
+    
+    .song-title {
+        font-size: 1.3rem;
+    }
+}
+
+/* 로딩 애니메이션 */
+.loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 150px;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(232, 62, 140, 0.2);
+    border-top: 4px solid #e83e8c;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 한글 입력 관련 추가 스타일 */
+.error-message {
+    color: #e83e8c;
+    text-align: center;
+    padding: 1rem;
+    font-weight: 500;
+}
+
+.empty-playlist {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: #777;
+    font-size: 0.9rem;
+} 

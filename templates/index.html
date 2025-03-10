@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cute Music Player</title>
+    <!-- Font Awesome 아이콘을 비동기적으로 로드 -->
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"></noscript>
+    <style>
+        /* Base styling */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5; /* 배경 이미지가 로드되기 전 배경색 */
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 1rem;
+        }
+        
+        /* 백그라운드 이미지는 JS로 지연 로딩 */
+        .bg-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background-size: cover;
+            background-position: center center;
+            transition: opacity 0.5s ease;
+            opacity: 0;
+        }
+        
+        .container {
+            max-width: 400px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            padding-bottom: 1rem;
+        }
+        
+        /* Music player styling */
+        .player-container {
+            position: relative;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .song-cover {
+            width: 200px;
+            height: 200px;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            margin-bottom: 1.5rem;
+            background-color: rgba(238, 238, 238, 0.7);
+        }
+        
+        .song-cover img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+        
+        .song-cover:hover img {
+            transform: scale(1.05);
+        }
+        
+        .play-btn {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .play-btn:hover {
+            background: rgba(255, 255, 255, 0.9);
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+        
+        .play-btn i {
+            color: #e83e8c;
+            font-size: 2rem;
+            padding-left: 5px;
+        }
+        
+        .song-info {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .song-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+        
+        .song-artist {
+            font-size: 1rem;
+            color: #666;
+        }
+        
+        .controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .control-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        
+        .control-btn i {
+            color: #666;
+            font-size: 1.2rem;
+        }
+        
+        .control-btn:hover i {
+            color: #e83e8c;
+        }
+        
+        .play-control {
+            width: 50px;
+            height: 50px;
+            background: rgba(232, 62, 140, 0.8);
+            border-radius: 50%;
+        }
+        
+        .play-control i {
+            color: white;
+            font-size: 1.5rem;
+            padding-left: 3px;
+        }
+        
+        .play-control.pause i {
+            padding-left: 0;
+        }
+        
+        /* Playlist styling */
+        .playlist {
+            margin-top: 1rem;
+            padding: 0 1.5rem;
+        }
+        
+        .playlist-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .playlist-title {
+            font-size: 1rem;
+            color: #555;
+            font-weight: 600;
+        }
+        
+        .playlist-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .add-song-btn, .shuffle-btn {
+            font-size: 0.9rem;
+            color: #e83e8c;
+            background: none;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        
+        .add-song-btn:hover, .shuffle-btn:hover {
+            text-decoration: underline;
+        }
+        
+        .playlist-items {
+            max-height: 200px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .playlist-item {
+            display: flex;
+            align-items: center;
+            padding: 0.7rem 1rem;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            position: relative;
+        }
+        
+        .playlist-item:hover {
+            background: #f0f1f3;
+        }
+        
+        .playlist-item.active {
+            background: #f8e1eb;
+        }
+        
+        .playlist-item.new-added {
+            animation: highlight-pulse 2s infinite;
+        }
+        
+        @keyframes highlight-pulse {
+            0% { box-shadow: inset 0 0 0 2px rgba(232, 62, 140, 0.4); }
+            50% { box-shadow: inset 0 0 0 2px rgba(232, 62, 140, 0.8); }
+            100% { box-shadow: inset 0 0 0 2px rgba(232, 62, 140, 0.4); }
+        }
+        
+        .playlist-item-img {
+            width: 40px;
+            height: 40px;
+            border-radius: 5px;
+            margin-right: 0.8rem;
+            object-fit: cover;
+        }
+        
+        .playlist-item-info {
+            flex: 1;
+        }
+        
+        .playlist-item-title {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 0.2rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .playlist-item-artist {
+            font-size: 0.8rem;
+            color: #777;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .delete-song-btn {
+            opacity: 0;
+            background: none;
+            border: none;
+            color: #e83e8c;
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 0.2rem;
+            transition: opacity 0.2s ease;
+        }
+        
+        .playlist-item:hover .delete-song-btn {
+            opacity: 1;
+        }
+        
+        .playing-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #e83e8c;
+            margin-left: 0.5rem;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(0.8); opacity: 0.5; }
+        }
+        
+        /* Add song form */
+        .add-song-form {
+            background: white;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .form-group {
+            margin-bottom: 0.8rem;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 0.9rem;
+            margin-bottom: 0.3rem;
+            color: #555;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 0.6rem;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #e83e8c;
+        }
+        
+        .form-submit {
+            width: 100%;
+            padding: 0.7rem;
+            background: #e83e8c;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+        
+        .form-submit:hover {
+            background: #d3277a;
+        }
+        
+        .cancel-btn {
+            text-align: center;
+            margin-top: 0.5rem;
+        }
+        
+        .cancel-btn button {
+            background: none;
+            border: none;
+            font-size: 0.8rem;
+            color: #777;
+            cursor: pointer;
+        }
+        
+        .cancel-btn button:hover {
+            color: #333;
+            text-decoration: underline;
+        }
+        
+        /* Hidden elements */
+        .hidden {
+            display: none;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 2rem;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #777;
+        }
+        
+        /* Responsive design */
+        @media (max-width: 480px) {
+            .song-cover {
+                width: 200px;
+                height: 200px;
+            }
+            
+            .song-title {
+                font-size: 1.3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 배경 이미지 컨테이너 추가 -->
+    <div class="bg-container" id="bg-container"></div>
+    
+    <div class="container">
+        <div class="player-container">
+            <!-- Cover art with play button -->
+            <div class="song-cover">
+                <img id="cover-image" src="https://via.placeholder.com/200?text=Loading..." alt="Song cover" loading="lazy">
+                <div class="play-btn" id="cover-play-btn">
+                    <i class="fas fa-play"></i>
+                </div>
+            </div>
+            
+            <!-- Song info -->
+            <div class="song-info">
+                <div class="song-title" id="song-title">Loading...</div>
+                <div class="song-artist" id="song-artist">Please wait</div>
+            </div>
+            
+            <!-- Controls -->
+            <div class="controls">
+                <button class="control-btn" id="replay-btn">
+                    <i class="fas fa-redo-alt"></i>
+                </button>
+                <button class="control-btn play-control" id="play-btn">
+                    <i class="fas fa-play"></i>
+                </button>
+                <button class="control-btn" id="next-btn">
+                    <i class="fas fa-step-forward"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- YouTube iframe (hidden) -->
+        <div id="youtube-player" class="hidden"></div>
+        
+        <!-- Playlist section -->
+        <div class="playlist">
+            <div class="playlist-header">
+                <div class="playlist-title">Playlist</div>
+                <div class="playlist-controls">
+                    <button class="shuffle-btn" id="shuffle-btn">
+                        <i class="fas fa-random"></i> Shuffle
+                    </button>
+                    <button class="add-song-btn" id="show-add-form-btn">
+                        <i class="fas fa-plus"></i> Add Song
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Add song form (initially hidden) -->
+            <div class="add-song-form hidden" id="add-song-form">
+                <form action="/add_song" method="post">
+                    <div class="form-group">
+                        <label class="form-label" for="title">Song Title</label>
+                        <input class="form-input" type="text" id="title" name="title" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="artist">Artist</label>
+                        <input class="form-input" type="text" id="artist" name="artist" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="youtube_url">YouTube URL or Video ID</label>
+                        <input class="form-input" type="text" id="youtube_url" name="youtube_url" required
+                               placeholder="https://www.youtube.com/watch?v=...">
+                    </div>
+                    <button class="form-submit" type="submit">Add to Playlist</button>
+                </form>
+                <div class="cancel-btn">
+                    <button id="cancel-add-form-btn">Cancel</button>
+                </div>
+            </div>
+            
+            <!-- Playlist items -->
+            <div class="playlist-items" id="playlist-container">
+                {% for song in songs %}
+                <div class="playlist-item{% if song.is_new_added %} new-added{% endif %}" data-id="{{ song.id }}" data-youtube-id="{{ song.youtube_id }}">
+                    <img class="playlist-item-img" src="{{ song.cover_url }}" alt="{{ song.title }}" loading="lazy">
+                    <div class="playlist-item-info">
+                        <div class="playlist-item-title">{{ song.title }}</div>
+                        <div class="playlist-item-artist">{{ song.artist }}</div>
+                    </div>
+                    <button class="delete-song-btn" data-id="{{ song.id }}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        Made with ❤️ just for you
+    </div>
+
+    <!-- 필수 스크립트만 먼저 로드, jQuery 제거 -->
+    <script>
+        // DOM elements
+        let player;
+        let currentVideoId = '';
+        let isPlaying = false;
+        let currentSongIndex = 0;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // 배경 이미지 지연 로드
+            const bgContainer = document.getElementById('bg-container');
+            const bgImage = new Image();
+            bgImage.onload = function() {
+                bgContainer.style.backgroundImage = `url('${bgImage.src}')`;
+                bgContainer.style.opacity = '1';
+            };
+            bgImage.src = '/static/cup_of_coffee_love.gif';
+            
+            // DOM elements
+            const coverPlayBtn = document.getElementById('cover-play-btn');
+            const playBtn = document.getElementById('play-btn');
+            const nextBtn = document.getElementById('next-btn');
+            const replayBtn = document.getElementById('replay-btn');
+            const shuffleBtn = document.getElementById('shuffle-btn');
+            const songTitle = document.getElementById('song-title');
+            const songArtist = document.getElementById('song-artist');
+            const coverImage = document.getElementById('cover-image');
+            const playlistContainer = document.getElementById('playlist-container');
+            const showAddFormBtn = document.getElementById('show-add-form-btn');
+            const addSongForm = document.getElementById('add-song-form');
+            const cancelAddFormBtn = document.getElementById('cancel-add-form-btn');
+            
+            // 삭제 버튼 이벤트 위임
+            document.querySelectorAll('.delete-song-btn').forEach(btn => {
+                btn.addEventListener('click', function(event) {
+                    event.stopPropagation();
+                    const songId = this.getAttribute('data-id');
+                    deleteSong(songId, event);
+                });
+            });
+            
+            // Event listeners
+            // Play/pause buttons
+            coverPlayBtn.addEventListener('click', togglePlay);
+            playBtn.addEventListener('click', togglePlay);
+            
+            // Next button
+            nextBtn.addEventListener('click', playNext);
+            
+            // Replay button
+            replayBtn.addEventListener('click', replaySong);
+            
+            // Shuffle button
+            shuffleBtn.addEventListener('click', shufflePlaylist);
+            
+            // Playlist item click
+            document.querySelectorAll('.playlist-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    loadSong(this);
+                    // Start playing when clicked
+                    if (player) {
+                        player.playVideo();
+                    }
+                });
+            });
+            
+            // Show add form button
+            showAddFormBtn.addEventListener('click', function() {
+                addSongForm.classList.remove('hidden');
+            });
+            
+            // Cancel add form button
+            cancelAddFormBtn.addEventListener('click', function() {
+                addSongForm.classList.add('hidden');
+            });
+
+            // Remove new-added class after some time
+            setTimeout(() => {
+                document.querySelectorAll('.new-added').forEach(item => {
+                    item.classList.remove('new-added');
+                });
+            }, 10000);  // Remove after 10 seconds
+            
+            // 유튜브 API 로드
+            loadYoutubeApi();
+        });
+        
+        // 유튜브 API 스크립트 지연 로드
+        function loadYoutubeApi() {
+            const tag = document.createElement('script');
+            tag.src = "https://www.youtube.com/iframe_api";
+            const firstScriptTag = document.getElementsByTagName('script')[0];
+            firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+        }
+        
+        // YouTube API ready
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('youtube-player', {
+                height: '0',
+                width: '0',
+                playerVars: {
+                    'playsinline': 1,
+                    'controls': 0,
+                    'disablekb': 1
+                },
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        }
+        
+        // Player ready
+        function onPlayerReady(event) {
+            // Load first song
+            const playlistItems = document.querySelectorAll('.playlist-item');
+            if (playlistItems.length > 0) {
+                loadSong(playlistItems[0]);
+            }
+        }
+        
+        // Player state change
+        function onPlayerStateChange(event) {
+            if (event.data === YT.PlayerState.ENDED) {
+                playNext();
+            } else if (event.data === YT.PlayerState.PLAYING) {
+                isPlaying = true;
+                updatePlayButton();
+            } else if (event.data === YT.PlayerState.PAUSED) {
+                isPlaying = false;
+                updatePlayButton();
+            }
+        }
+        
+        // Load a song
+        function loadSong(songElement) {
+            // Clear active class from all items
+            document.querySelectorAll('.playlist-item').forEach(item => {
+                item.classList.remove('active');
+                // Remove playing indicator
+                const indicator = item.querySelector('.playing-indicator');
+                if (indicator) {
+                    indicator.remove();
+                }
+            });
+            
+            // Add active class to current item
+            songElement.classList.add('active');
+            
+            // Add playing indicator if playing
+            if (isPlaying) {
+                const indicator = document.createElement('div');
+                indicator.className = 'playing-indicator';
+                songElement.appendChild(indicator);
+            }
+            
+            // Update song info
+            const title = songElement.querySelector('.playlist-item-title').textContent;
+            const artist = songElement.querySelector('.playlist-item-artist').textContent;
+            const youtubeId = songElement.getAttribute('data-youtube-id');
+            const image = songElement.querySelector('.playlist-item-img').src;
+            
+            songTitle.textContent = title;
+            songArtist.textContent = artist;
+            coverImage.src = image;
+            currentVideoId = youtubeId;
+            
+            // Load YouTube video
+            if (player && player.loadVideoById) {
+                player.loadVideoById(youtubeId);
+            }
+            
+            // Update current song index
+            const playlistItems = document.querySelectorAll('.playlist-item');
+            for (let i = 0; i < playlistItems.length; i++) {
+                if (playlistItems[i] === songElement) {
+                    currentSongIndex = i;
+                    break;
+                }
+            }
+        }
+        
+        // Toggle play/pause
+        function togglePlay() {
+            if (player && player.getPlayerState) {
+                if (isPlaying) {
+                    player.pauseVideo();
+                } else {
+                    player.playVideo();
+                }
+            }
+        }
+        
+        // Update play button UI
+        function updatePlayButton() {
+            if (isPlaying) {
+                playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+                playBtn.classList.add('pause');
+                coverPlayBtn.innerHTML = '<i class="fas fa-pause"></i>';
+            } else {
+                playBtn.innerHTML = '<i class="fas fa-play"></i>';
+                playBtn.classList.remove('pause');
+                coverPlayBtn.innerHTML = '<i class="fas fa-play"></i>';
+            }
+            
+            // Update playing indicator
+            document.querySelectorAll('.playlist-item').forEach(item => {
+                const indicator = item.querySelector('.playing-indicator');
+                if (indicator) {
+                    indicator.remove();
+                }
+                
+                if (item.classList.contains('active') && isPlaying) {
+                    const newIndicator = document.createElement('div');
+                    newIndicator.className = 'playing-indicator';
+                    item.appendChild(newIndicator);
+                }
+            });
+        }
+        
+        // Play next song
+        function playNext() {
+            const playlistItems = document.querySelectorAll('.playlist-item');
+            if (playlistItems.length > 0) {
+                let nextIndex = (currentSongIndex + 1) % playlistItems.length;
+                loadSong(playlistItems[nextIndex]);
+                if (isPlaying) {
+                    player.playVideo();
+                }
+            }
+        }
+        
+        // Replay current song
+        function replaySong() {
+            if (player) {
+                player.seekTo(0);
+                player.playVideo();
+            }
+        }
+        
+        // Shuffle the playlist
+        function shufflePlaylist() {
+            const playlistItems = Array.from(document.querySelectorAll('.playlist-item'));
+            if (playlistItems.length <= 1) return;
+            
+            // Get currently playing song element
+            const currentSong = playlistItems[currentSongIndex];
+            
+            // Remove the current song from the array to shuffle
+            playlistItems.splice(currentSongIndex, 1);
+            
+            // Shuffle the remaining songs
+            for (let i = playlistItems.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [playlistItems[i], playlistItems[j]] = [playlistItems[j], playlistItems[i]];
+            }
+            
+            // Put the current song back at index 0
+            playlistItems.unshift(currentSong);
+            
+            // Update the DOM
+            const playlistContainer = document.getElementById('playlist-container');
+            playlistContainer.innerHTML = '';
+            
+            playlistItems.forEach(item => {
+                playlistContainer.appendChild(item);
+            });
+            
+            // Reset current index
+            currentSongIndex = 0;
+        }
+        
+        // Delete a song
+        function deleteSong(songId, event) {
+            // Fetch API 사용
+            fetch(`/remove_song/${songId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Remove from DOM
+                    const songElement = document.querySelector(`.playlist-item[data-id="${songId}"]`);
+                    const isCurrentlyPlaying = songElement.classList.contains('active');
+                    
+                    // If the deleted song is currently playing, play the next song
+                    if (isCurrentlyPlaying) {
+                        const nextSibling = songElement.nextElementSibling || document.querySelector('.playlist-item');
+                        if (nextSibling) {
+                            loadSong(nextSibling);
+                            if (isPlaying) {
+                                player.playVideo();
+                            }
+                        }
+                    }
+                    
+                    songElement.remove();
+                }
+            });
+        }
+    </script>
+</body>
+</html>
