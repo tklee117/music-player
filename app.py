@@ -144,16 +144,32 @@ init_db()
 @app.route('/', defaults={'path': 'index.html'})
 @app.route('/<path:path>')
 def serve_frontend(path):
-    # frontend 디렉토리에서 파일 제공
     try:
+        # 먼저 frontend 디렉토리에서 파일 찾기
         return send_from_directory('frontend', path)
     except:
-        # 파일이 없으면 index.html로 리다이렉트 (SPA 지원)
-        return send_from_directory('frontend', 'index.html')
+        try:
+            # frontend에 없으면 static 디렉토리에서 파일 찾기
+            return send_from_directory('static', path)
+        except:
+            # 파일이 없으면 index.html로 리다이렉트 (SPA 지원)
+            return send_from_directory('frontend', 'index.html')
 
 @app.route('/static/<path:path>')
 def serve_static(path):
     return send_from_directory('static', path)
+
+@app.route('/js/<path:path>')
+def serve_js(path):
+    return send_from_directory('static/js', path)
+
+@app.route('/css/<path:path>')
+def serve_css(path):
+    return send_from_directory('static/css', path)
+
+@app.route('/assets/<path:path>')
+def serve_assets(path):
+    return send_from_directory('static/assets', path)
 
 # API 엔드포인트들
 @app.route('/api/songs', methods=['GET'])
