@@ -94,28 +94,6 @@
             100% { transform: scale(1); }
         }
         
-        .render-notice {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background-color: rgba(0,0,0,0.7);
-            color: white;
-            text-align: center;
-            padding: 0.5rem;
-            font-size: 0.8rem;
-            z-index: 100;
-        }
-        
-        .render-notice a {
-            color: #e83e8c;
-            text-decoration: none;
-        }
-        
-        .render-notice a:hover {
-            text-decoration: underline;
-        }
-        
         /* 추가 버튼 스타일 */
         .reset-btn {
             color: #5a6268;
@@ -145,14 +123,11 @@
     <!-- 초기 로딩 화면 -->
     <div class="initial-loading" id="initial-loading">
         <div class="loading-logo">🎵</div>
-        <div class="loading-text">뮤직 플레이어 로딩 중...</div>
+        <div class="loading-text">음악 플레이어 로딩 중...</div>
         <div class="loading-spinner"></div>
         <div class="loading-progress">
             <div class="loading-progress-bar" id="loading-progress-bar"></div>
         </div>
-        <p style="margin-top: 1rem; font-size: 0.8rem; color: #777; max-width: 80%; text-align: center;">
-            Render 무료 플랜에서는 첫 로딩에 15-30초가 소요될 수 있습니다.
-        </p>
     </div>
     
     <!-- 배경 이미지 컨테이너 -->
@@ -262,11 +237,6 @@
     <div class="footer">
         Made with ❤️ just for you
     </div>
-    
-    <!-- Render 무료 티어 알림 -->
-    <div class="render-notice">
-        Render 무료 티어는 일정 시간 동안 사용되지 않으면 휴면 모드로 전환됩니다. 첫 접속 시 15-30초가 소요될 수 있습니다.
-    </div>
 
     <!-- 자바스크립트 -->
     <script src="/js/app.js"></script>
@@ -275,10 +245,10 @@
         const progressBar = document.getElementById('loading-progress-bar');
         const initialLoading = document.getElementById('initial-loading');
         
-        // 로딩 진행률 시뮬레이션
+        // 로딩 진행률 시뮬레이션 - 더 빠르게 진행되도록 조정
         let progress = 0;
         const loadingInterval = setInterval(() => {
-            progress += Math.random() * 3;  // 진행률 랜덤하게 증가
+            progress += Math.random() * 5;  // 진행률을 더 빠르게 증가
             
             if (progress >= 100) {
                 progress = 100;
@@ -286,20 +256,17 @@
             }
             
             progressBar.style.width = `${progress}%`;
-        }, 300);
+        }, 150);  // 인터벌 시간 단축
         
-        // 컨텐츠 로드 완료 되면 로딩 화면 숨기기
+        // 컨텐츠 로드 완료 되면 로딩 화면 즉시 숨기기
         window.addEventListener('load', () => {
-            // API 로드가 완료되면 약간의 지연 후 로딩 화면 제거
+            progressBar.style.width = '100%';
             setTimeout(() => {
-                progressBar.style.width = '100%';
+                initialLoading.style.opacity = '0';
                 setTimeout(() => {
-                    initialLoading.style.opacity = '0';
-                    setTimeout(() => {
-                        initialLoading.style.display = 'none';
-                    }, 500);
+                    initialLoading.style.display = 'none';
                 }, 300);
-            }, 1000);
+            }, 150);
         });
         
         // songs.json 파일로 초기화하는 버튼 이벤트 설정
