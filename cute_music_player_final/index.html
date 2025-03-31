@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>귀여운 음악 플레이어</title>
+    <meta name="description" content="YouTube 기반 귀여운 음악 플레이어 - 노래를 추가하고 재생할 수 있습니다.">
+    <meta name="theme-color" content="#6a4c93">
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="background-container">
+        <img src="cup_of_coffee_love.gif" alt="커피 배경" class="background-gif">
+    </div>
+
+    <div class="container">
+        <h1>귀여운 음악 플레이어</h1>
+        
+        <div class="player-container">
+            <div class="song-info">
+                <div class="thumbnail-container">
+                    <img id="song-thumbnail" src="https://via.placeholder.com/200" alt="노래 썸네일">
+                </div>
+                <div class="song-details">
+                    <h2 id="song-title">노래를 선택해주세요</h2>
+                    <p id="song-artist">아티스트</p>
+                </div>
+            </div>
+            
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress" id="progress"></div>
+                </div>
+                <div class="time-info">
+                    <span id="current-time">0:00</span>
+                    <span id="duration">0:00</span>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button id="prev-btn" class="control-btn"><i class="fas fa-step-backward"></i></button>
+                <button id="play-btn" class="control-btn"><i class="fas fa-play"></i></button>
+                <button id="next-btn" class="control-btn"><i class="fas fa-step-forward"></i></button>
+                <button id="shuffle-btn" class="control-btn"><i class="fas fa-random"></i></button>
+            </div>
+        </div>
+        
+        <div class="playlist-container">
+            <h2>재생 목록</h2>
+            <div class="add-song-container">
+                <input type="text" id="youtube-url" placeholder="YouTube URL 입력">
+                <button id="add-song-btn">추가</button>
+            </div>
+            <ul id="playlist" class="playlist">
+                <!-- 재생 목록 항목들이 여기에 동적으로 추가됩니다 -->
+            </ul>
+        </div>
+    </div>
+
+    <!-- YouTube API -->
+    <div id="youtube-player"></div>
+    
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script src="app.js"></script>
+</body>
+</html> 
